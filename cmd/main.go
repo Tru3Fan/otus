@@ -2,19 +2,18 @@ package main
 
 import (
 	"fmt"
-	"otus/internal/model/task"
-	"otus/internal/model/user"
+	"otus/internal/model"
 )
 
 func main() {
-	a := task.Task{
+	a := model.Task{
 		ID:          1,
 		Title:       "Ivan",
 		Description: "Ivan",
 		AssigneeID:  23,
 	}
 
-	b := user.User{
+	b := model.User{
 		ID:       8654,
 		Username: "john",
 	}
