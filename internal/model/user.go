@@ -1,13 +1,10 @@
 package model
 
-import (
-	"time"
-)
-
 type User struct {
-	ID        int64
-	Username  string
-	Email     string
-	CreatedAt time.Time
-	updatedAt time.Time
+	UserID   int
+	Username string
+}
+
+func (u User) ID() int {
+	return u.UserID
 }
