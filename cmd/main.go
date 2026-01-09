@@ -1,23 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"otus/internal/model"
+	"otus/internal/service"
+	"time"
 )
 
 func main() {
-	a := model.Task{
-		ID:          1,
-		Title:       "Ivan",
-		Description: "Ivan",
-		AssigneeID:  23,
-	}
+	ticker := time.NewTicker(5 * time.Second)
 
-	b := model.User{
-		ID:       8654,
-		Username: "john",
+	for range ticker.C {
+		service.GenerateAndStore()
+		continue
 	}
-
-	fmt.Println(a)
-	fmt.Println(b)
 }
