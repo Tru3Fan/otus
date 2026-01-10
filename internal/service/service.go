@@ -5,10 +5,12 @@ import (
 	"otus/internal/repository"
 )
 
-func GenerateAndStore() {
-	u := model.User{UserID: 1, Username: "Ivan"}
-	t := model.Task{TaskID: 1, Title: "Sleep"}
+func GenerateAndCreate(out chan<- repository.Storable) {
 
-	repository.Add(u)
-	repository.Add(t)
+	for range 10 {
+		out <- model.User{1234, "Dmitriy"}
+		out <- model.Task{1211, "Sleep"}
+	}
+
+	close(out)
 }
