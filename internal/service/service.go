@@ -10,6 +10,7 @@ func GenerateAndCreate(ctx context.Context, out chan<- repository.Storable) {
 	defer close(out)
 
 	for range 10 {
+
 		select {
 		case <-ctx.Done():
 			return

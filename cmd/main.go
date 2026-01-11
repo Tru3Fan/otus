@@ -2,18 +2,17 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"otus/internal/repository"
 	"otus/internal/service"
 	"syscall"
-	"time"
 )
 
 func main() {
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	ctx, cancel := context.WithCancel(context.Background())
 
 	ch := make(chan repository.Storable, 50)
 
@@ -21,7 +20,12 @@ func main() {
 	go repository.Add(ctx, ch)
 	go repository.LogNew(ctx)
 
-	time.Sleep(1 * time.Second)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	<-ctx.Done()
+	sig := <-sigChan
+
+	cancel()
+
+	fmt.Println("Получен сигнал: ", sig)
 }
