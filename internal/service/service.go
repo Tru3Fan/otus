@@ -1,16 +1,25 @@
 package service
 
 import (
+	"context"
 	"otus/internal/model"
 	"otus/internal/repository"
 )
 
-func GenerateAndCreate(out chan<- repository.Storable) {
+func GenerateAndCreate(ctx context.Context, out chan<- repository.Storable) {
+	defer close(out)
 
 	for range 10 {
-		out <- model.User{1234, "Dmitriy"}
-		out <- model.Task{1211, "Sleep"}
-	}
+		select {
+		case <-ctx.Done():
+			return
+		case out <- model.User{1234, "Dmitriy"}:
+		}
 
-	close(out)
+		select {
+		case <-ctx.Done():
+			return
+		case out <- model.Task{1211, "Sleep"}:
+		}
+	}
 }

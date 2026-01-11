@@ -1,21 +1,27 @@
 package main
 
 import (
+	"context"
+	"os"
+	"os/signal"
 	"otus/internal/repository"
 	"otus/internal/service"
+	"syscall"
 	"time"
 )
 
 func main() {
 
-	ch := make(chan repository.Storable, 50)
-	logCh := make(chan struct{})
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	go repository.Add(ch)
-	go repository.LogNew(logCh)
-	go service.GenerateAndCreate(ch)
+	ch := make(chan repository.Storable, 50)
+
+	go service.GenerateAndCreate(ctx, ch)
+	go repository.Add(ctx, ch)
+	go repository.LogNew(ctx)
 
 	time.Sleep(1 * time.Second)
 
-	close(logCh)
+	<-ctx.Done()
 }
