@@ -20,7 +20,6 @@ var (
 )
 
 func Add(ctx context.Context, in <-chan Storable) {
-
 	for {
 		select {
 		case <-ctx.Done():
