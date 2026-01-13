@@ -1,21 +1,42 @@
 package main
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/signal"
 	"otus/internal/repository"
 	"otus/internal/service"
-	"time"
+	"sync"
+	"syscall"
 )
 
 func main() {
 
+	ctx, cancel := context.WithCancel(context.Background())
+
 	ch := make(chan repository.Storable, 50)
-	logCh := make(chan struct{})
 
-	go repository.Add(ch)
-	go repository.LogNew(logCh)
-	go service.GenerateAndCreate(ch)
+	var wg sync.WaitGroup
 
-	time.Sleep(1 * time.Second)
+	wg.Add(1)
+	go service.GenerateAndCreate(ctx, ch, &wg)
 
-	close(logCh)
+	wg.Add(1)
+	go repository.Add(ctx, ch, &wg)
+
+	wg.Add(1)
+	go repository.LogNew(ctx, &wg)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	sig := <-sigChan
+
+	fmt.Println("Получен сигнал: ", sig)
+
+	cancel()
+	wg.Wait()
+
+	fmt.Println("Горутины завершины")
 }
