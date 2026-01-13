@@ -19,7 +19,10 @@ var (
 	tasks []model.Task
 )
 
-func Add(ctx context.Context, in <-chan Storable) {
+func Add(ctx context.Context, in <-chan Storable, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
 	for {
 		select {
 		case <-ctx.Done():

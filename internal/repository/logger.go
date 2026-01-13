@@ -4,10 +4,14 @@ import (
 	"context"
 	"log"
 	"otus/internal/model"
+	"sync"
 	"time"
 )
 
-func LogNew(ctx context.Context) {
+func LogNew(ctx context.Context, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
 	t := time.NewTicker(200 * time.Millisecond)
 	defer t.Stop()
 
