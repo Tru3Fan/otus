@@ -35,11 +35,13 @@ func Add(ctx context.Context, in <-chan Storable, wg *sync.WaitGroup) {
 			case model.User:
 				muUsers.Lock()
 				users = append(users, v)
+				_ = appendJSON(userFile, v)
 				muUsers.Unlock()
 				fmt.Println("Added user: ", v.Username)
 			case model.Task:
 				muTasks.Lock()
 				tasks = append(tasks, v)
+				_ = appendJSON(TaskFile, v)
 				muTasks.Unlock()
 				fmt.Println("Added task: ", v.Title)
 			default:
