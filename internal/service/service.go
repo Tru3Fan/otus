@@ -4,9 +4,11 @@ import (
 	"context"
 	"otus/internal/model"
 	"otus/internal/repository"
+	"sync"
 )
 
-func GenerateAndCreate(ctx context.Context, out chan<- repository.Storable) {
+func GenerateAndCreate(ctx context.Context, out chan<- repository.Storable, wg *sync.WaitGroup) {
+	defer wg.Done()
 	defer close(out)
 
 	for range 10 {
