@@ -13,6 +13,11 @@ import (
 
 func main() {
 
+	if err := repository.LoadAllData(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 
 	ch := make(chan repository.Storable, 50)
