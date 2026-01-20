@@ -8,6 +8,18 @@ import (
 	"time"
 )
 
+func Counts() (usersCount, tasksCount int) {
+	muUsers.Lock()
+	usersCount = len(users)
+	muUsers.Unlock()
+
+	muTasks.Lock()
+	tasksCount = len(tasks)
+	muTasks.Unlock()
+
+	return
+}
+
 func LogNew(ctx context.Context, wg *sync.WaitGroup) {
 
 	defer wg.Done()
@@ -15,7 +27,7 @@ func LogNew(ctx context.Context, wg *sync.WaitGroup) {
 	t := time.NewTicker(200 * time.Millisecond)
 	defer t.Stop()
 
-	uLast, tLast := 0, 0
+	uLast, tLast := Counts()
 
 	for {
 		select {

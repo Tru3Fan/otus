@@ -11,18 +11,18 @@ func GenerateAndCreate(ctx context.Context, out chan<- repository.Storable, wg *
 	defer wg.Done()
 	defer close(out)
 
-	for range 10 {
+	for range 4 {
 
 		select {
 		case <-ctx.Done():
 			return
-		case out <- model.User{1234, "Dmitriy"}:
+		case out <- model.User{4, "Ivan"}:
 		}
 
 		select {
 		case <-ctx.Done():
 			return
-		case out <- model.Task{1211, "Sleep"}:
+		case out <- model.Task{1, "Dream"}:
 		}
 	}
 }
