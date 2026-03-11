@@ -10,7 +10,7 @@ import (
 
 const (
 	userFile = "./data/users.json"
-	TaskFile = "./data/tasks.json"
+	taskFile = "./data/tasks.json"
 )
 
 func LoadAllData() error {
@@ -47,7 +47,7 @@ func loadUser() error {
 }
 
 func loadTask() error {
-	TaskData, err := os.Open(TaskFile)
+	TaskData, err := os.Open(taskFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
@@ -80,7 +80,22 @@ func appendJSON(path string, v any) error {
 		return err
 	}
 	defer file.Close()
-
 	_, err = file.Write(append(data, '\n'))
 	return err
+}
+
+func saveAllJSON[T any](path string, items []T) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	enc := json.NewEncoder(file)
+	for _, item := range items {
+		if err := enc.Encode(item); err != nil {
+			return err
+		}
+	}
+	return nil
 }
