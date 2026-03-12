@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"otus/internal/model"
+	"strconv"
 	"sync"
 )
 
@@ -38,13 +39,13 @@ func Add(ctx context.Context, in <-chan Storable, wg *sync.WaitGroup) {
 			case model.User:
 				muUsers.Lock()
 				users = append(users, v)
-				_ = appendJSON(userFile, v)
+				_ = appendCSV(userFile, []string{strconv.Itoa(v.UserID), v.Username})
 				muUsers.Unlock()
 				fmt.Println("Added user: ", v.Username)
 			case model.Task:
 				muTasks.Lock()
 				tasks = append(tasks, v)
-				_ = appendJSON(taskFile, v)
+				_ = appendCSV(taskFile, []string{strconv.Itoa(v.TaskID), v.Title})
 				muTasks.Unlock()
 				fmt.Println("Added task: ", v.Title)
 			default:
@@ -81,7 +82,7 @@ func AddUser(u model.User) error {
 		u.UserID = nextUserID()
 	}
 	users = append(users, u)
-	return saveAllJSON(userFile, users)
+	return saveAllCSV(userFile, []string{"user_id", "username"}, usersToRows())
 }
 
 func UpdateUser(id int, updated model.User) (model.User, error) {
@@ -91,7 +92,7 @@ func UpdateUser(id int, updated model.User) (model.User, error) {
 		if u.UserID == id {
 			updated.UserID = id
 			users[i] = updated
-			return updated, saveAllJSON(userFile, users)
+			return updated, saveAllCSV(userFile, []string{"user_id", "username"}, usersToRows())
 		}
 	}
 	return model.User{}, ErrNotFound
@@ -103,7 +104,7 @@ func DeleteUser(id int) error {
 	for i, u := range users {
 		if u.UserID == id {
 			users = append(users[:i], users[i+1:]...)
-			return saveAllJSON(userFile, users)
+			return saveAllCSV(userFile, []string{"user_id", "username"}, usersToRows())
 		}
 	}
 	return ErrNotFound
@@ -135,7 +136,7 @@ func AddTask(t model.Task) error {
 		t.TaskID = nextTaskID()
 	}
 	tasks = append(tasks, t)
-	return saveAllJSON(taskFile, tasks)
+	return saveAllCSV(taskFile, []string{"task_id", "title"}, tasksToRows())
 }
 
 func UpdateTask(id int, updated model.Task) (model.Task, error) {
@@ -145,7 +146,7 @@ func UpdateTask(id int, updated model.Task) (model.Task, error) {
 		if t.TaskID == id {
 			updated.TaskID = id
 			tasks[i] = updated
-			return updated, saveAllJSON(taskFile, tasks)
+			return updated, saveAllCSV(taskFile, []string{"task_id", "title"}, tasksToRows())
 		}
 	}
 	return model.Task{}, ErrNotFound
@@ -157,7 +158,7 @@ func DeleteTask(id int) error {
 	for i, t := range tasks {
 		if t.TaskID == id {
 			tasks = append(tasks[:i], tasks[i+1:]...)
-			return saveAllJSON(taskFile, tasks)
+			return saveAllCSV(taskFile, []string{"task_id", "title"}, tasksToRows())
 		}
 	}
 	return ErrNotFound
@@ -181,4 +182,20 @@ func nextTaskID() int {
 		}
 	}
 	return max + 1
+}
+
+func usersToRows() [][]string {
+	rows := make([][]string, len(users))
+	for i, u := range users {
+		rows[i] = []string{strconv.Itoa(u.UserID), u.Username}
+	}
+	return rows
+}
+
+func tasksToRows() [][]string {
+	rows := make([][]string, len(tasks))
+	for i, u := range tasks {
+		rows[i] = []string{strconv.Itoa(u.TaskID), u.Title}
+	}
+	return rows
 }
