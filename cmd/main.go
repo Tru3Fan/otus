@@ -11,6 +11,7 @@ import (
 	"otus/internal/service"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,6 +38,7 @@ func main() {
 	wg.Add(1)
 	go repository.LogNew(ctx, &wg)
 
+	//Server 8080
 	r := gin.Default()
 
 	api := r.Group("/api")
@@ -44,15 +46,15 @@ func main() {
 	{
 		api.POST("/user", handler.CreateUser)
 		api.GET("/users", handler.GetUsers)
-		api.GET("/users/:id", handler.GetUser)
-		api.PUT("user/:id", handler.UpdateUser)
-		api.DELETE("user/:id", handler.DeleteUser)
+		api.GET("/user/:id", handler.GetUser)
+		api.PUT("/user/:id", handler.UpdateUser)
+		api.DELETE("/user/:id", handler.DeleteUser)
 
 		api.POST("/task", handler.CreateTask)
 		api.GET("/tasks", handler.GetTasks)
-		api.GET("/tasks/:id", handler.GetTask)
-		api.PUT("task/:id", handler.UpdateTask)
-		api.DELETE("task/:id", handler.DeleteTask)
+		api.GET("/task/:id", handler.GetTask)
+		api.PUT("/task/:id", handler.UpdateTask)
+		api.DELETE("/task/:id", handler.DeleteTask)
 	}
 
 	srv := &http.Server{Addr: ":8080", Handler: r}
@@ -70,8 +72,11 @@ func main() {
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
 	sig := <-sigChan
-
 	fmt.Println("Получен сигнал: ", sig)
+
+	shutdawnCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer shutdownCancel()
+	_ = srv.Shutdown(shutdawnCtx)
 
 	cancel()
 	wg.Wait()
