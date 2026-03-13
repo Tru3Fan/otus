@@ -74,7 +74,7 @@ func GetUserByID(id int) (model.User, error) {
 	return model.User{}, ErrNotFound
 }
 
-func AddUser(u model.User) error {
+func AddUser(u model.User) (model.User, error) {
 	muUsers.Lock()
 	defer muUsers.Unlock()
 
@@ -82,7 +82,7 @@ func AddUser(u model.User) error {
 		u.UserID = nextUserID()
 	}
 	users = append(users, u)
-	return saveAllCSV(userFile, []string{"user_id", "username"}, usersToRows())
+	return u, saveAllCSV(userFile, []string{"user_id", "username"}, usersToRows())
 }
 
 func UpdateUser(id int, updated model.User) (model.User, error) {
@@ -129,14 +129,14 @@ func GetTaskByID(id int) (model.Task, error) {
 	return model.Task{}, ErrNotFound
 }
 
-func AddTask(t model.Task) error {
+func AddTask(t model.Task) (model.Task, error) {
 	muTasks.Lock()
 	defer muTasks.Unlock()
 	if t.TaskID == 0 {
 		t.TaskID = nextTaskID()
 	}
 	tasks = append(tasks, t)
-	return saveAllCSV(taskFile, []string{"task_id", "title"}, tasksToRows())
+	return t, saveAllCSV(taskFile, []string{"task_id", "title"}, tasksToRows())
 }
 
 func UpdateTask(id int, updated model.Task) (model.Task, error) {

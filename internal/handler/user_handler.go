@@ -10,27 +10,42 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type UserResult struct {
+type UserRequest struct {
 	Username string `json:"username" binding:"required"`
 }
 
-// POST /api/user
+// CreateUser godoc
+// @Summary Создать пользователя
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param user body internal_handler.UserRequest true "Данные пользователя"
+// @Success 201 {object} model.User
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/user [post]
 func CreateUser(c *gin.Context) {
-	var req UserResult
-	if err := c.ShouldBind(&req); err != nil {
+	var req UserRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	u := model.User{Username: req.Username}
-	if err := repository.AddUser(u); err != nil {
+	u, err := repository.AddUser(model.User{Username: req.Username})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to sace user"})
 		return
 	}
 	c.JSON(http.StatusCreated, gin.H{"user": u})
 }
 
-// GET /api/users
+// GetUsers godoc
+// @Summary Получить всех пользователей
+// @Tags users
+// @Produce json
+// @Success 200 {array} model.User
+// @Router /api/users [get]
 func GetUsers(c *gin.Context) {
 	all := repository.GetAllUsers()
 	if all == nil {
@@ -39,7 +54,15 @@ func GetUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, all)
 }
 
-// GET /api/user/:id
+// GetUser godoc
+// @Summary Получить пользователя по ID
+// @Tags users
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Success 200 {object} model.User
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/user/{id} [get]
 func GetUser(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
@@ -58,14 +81,25 @@ func GetUser(c *gin.Context) {
 	c.JSON(http.StatusOK, u)
 }
 
-// PUT /api/user/:id
+// UpdateUser godoc
+// @Summary Обновить пользователя
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID пользователя"
+// @Param user body internal_handler.UserRequest true "Новые данные"
+// @Success 200 {object} model.User
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/user/{id} [put]
 func UpdateUser(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
 		return
 	}
 
-	var req UserResult
+	var req UserRequest
 	if err := c.ShouldBind(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -83,7 +117,16 @@ func UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, updated)
 }
 
-// DELETE /api/user/:id
+// DeleteUser godoc
+// @Summary Удалить пользователя
+// @Tags users
+// @Produce json
+// @Security BearerAuth
+// @Param id path int true "ID пользователя"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/user/{id} [delete]
 func DeleteUser(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
