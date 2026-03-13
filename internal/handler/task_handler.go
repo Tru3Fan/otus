@@ -85,6 +85,7 @@ func GetTask(c *gin.Context) {
 // @Tags tasks
 // @Accept json
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID задачи"
 // @Param task body TaskRequest true "Новые данные"
 // @Success 200 {object} model.Task
@@ -118,6 +119,7 @@ func UpdateTask(c *gin.Context) {
 // @Summary Удалить задачу
 // @Tags tasks
 // @Produce json
+// @Security BearerAuth
 // @Param id path int true "ID задачи"
 // @Success 200 {object} map[string]string
 // @Failure 400 {object} map[string]string
