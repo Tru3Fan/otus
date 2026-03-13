@@ -13,10 +13,29 @@ import (
 	"syscall"
 	"time"
 
+	_ "otus/docs"
+
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title           Otus API
+// @version         1.0
+// @description     API для управления пользователями и задачами
+// @host            localhost:8080
+// @BasePath        /
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+
 func main() {
+
+	if err := godotenv.Load(); err != nil {
+		fmt.Println("Error loading .env file", err)
+		os.Exit(1)
+	}
 
 	if err := repository.LoadAllData(); err != nil {
 		fmt.Println(err)
@@ -41,20 +60,27 @@ func main() {
 	//Server 8080
 	r := gin.Default()
 
-	api := r.Group("/api")
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
+	api := r.Group("/api")
 	{
-		api.POST("/user", handler.CreateUser)
+		api.POST("/login", handler.Login)
 		api.GET("/users", handler.GetUsers)
 		api.GET("/user/:id", handler.GetUser)
-		api.PUT("/user/:id", handler.UpdateUser)
-		api.DELETE("/user/:id", handler.DeleteUser)
-
-		api.POST("/task", handler.CreateTask)
 		api.GET("/tasks", handler.GetTasks)
 		api.GET("/task/:id", handler.GetTask)
-		api.PUT("/task/:id", handler.UpdateTask)
-		api.DELETE("/task/:id", handler.DeleteTask)
+
+		protected := api.Group("/")
+		protected.Use(handler.AuthMiddleware())
+		{
+			protected.POST("/user", handler.CreateUser)
+			protected.PUT("/user/:id", handler.UpdateUser)
+			protected.DELETE("/user/:id", handler.DeleteUser)
+
+			protected.POST("/task", handler.CreateTask)
+			protected.PUT("/task/:id", handler.UpdateTask)
+			protected.DELETE("/task/:id", handler.DeleteTask)
+		}
 	}
 
 	srv := &http.Server{Addr: ":8080", Handler: r}

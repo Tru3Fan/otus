@@ -13,7 +13,17 @@ type TaskRequest struct {
 	Title string `json:"title" binding:"required"`
 }
 
-// POST /api/task
+// CreateTask godoc
+// @Summary Создать задачу
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param task body TaskRequest true "Данные задачи"
+// @Success 201 {object} model.Task
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /api/task [post]
 func CreateTask(c *gin.Context) {
 	var req TaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -21,15 +31,20 @@ func CreateTask(c *gin.Context) {
 		return
 	}
 
-	t := model.Task{Title: req.Title}
-	if err := repository.AddTask(t); err != nil {
+	t, err := repository.AddTask(model.Task{Title: req.Title})
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add task"})
 		return
 	}
 	c.JSON(http.StatusCreated, t)
 }
 
-// GET /api/tasks
+// GetTasks godoc
+// @Summary Получить все задачи
+// @Tags tasks
+// @Produce json
+// @Success 200 {array} model.Task
+// @Router /api/tasks [get]
 func GetTasks(c *gin.Context) {
 	all := repository.GetAllTasks()
 	if all == nil {
@@ -38,7 +53,15 @@ func GetTasks(c *gin.Context) {
 	c.JSON(http.StatusOK, all)
 }
 
-// GET /api/task/:id
+// GetTask godoc
+// @Summary Получить задачу по ID
+// @Tags tasks
+// @Produce json
+// @Param id path int true "ID задачи"
+// @Success 200 {object} model.Task
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/task/{id} [get]
 func GetTask(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
@@ -57,7 +80,17 @@ func GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
-// PUT /api/task/:id
+// UpdateTask godoc
+// @Summary Обновить задачу
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Param id path int true "ID задачи"
+// @Param task body TaskRequest true "Новые данные"
+// @Success 200 {object} model.Task
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/task/{id} [put]
 func UpdateTask(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
@@ -81,7 +114,15 @@ func UpdateTask(c *gin.Context) {
 	c.JSON(http.StatusOK, updated)
 }
 
-// DELETE /api/task/:id
+// DeleteTask godoc
+// @Summary Удалить задачу
+// @Tags tasks
+// @Produce json
+// @Param id path int true "ID задачи"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Router /api/task/{id} [delete]
 func DeleteTask(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
