@@ -1,16 +1,16 @@
 package repository
 
 import (
-	"bufio"
-	"encoding/json"
+	"encoding/csv"
 	"errors"
 	"os"
 	"otus/internal/model"
+	"strconv"
 )
 
 const (
-	userFile = "./data/users.json"
-	TaskFile = "./data/tasks.json"
+	userFile = "./data/users.csv"
+	taskFile = "./data/tasks.csv"
 )
 
 func LoadAllData() error {
@@ -33,47 +33,50 @@ func loadUser() error {
 	}
 	defer userData.Close()
 
-	sc := bufio.NewScanner(userData)
-	for sc.Scan() {
-		var u model.User
-		if err := json.Unmarshal(sc.Bytes(), &u); err != nil {
-			return err
-		}
+	//sc := bufio.NewScanner(userData)
+	//for sc.Scan() {
+	//	var u model.User
+	//	if err := json.Unmarshal(sc.Bytes(), &u); err != nil {
+	//		return err
+	//	}
+	rows, err := csv.NewReader(userData).ReadAll()
+	if err != nil {
+		return err
+	}
+
+	for _, row := range rows[1:] {
+		id, _ := strconv.Atoi(row[0])
 		muUsers.Lock()
-		users = append(users, u)
+		users = append(users, model.User{UserID: id, Username: row[1]})
 		muUsers.Unlock()
 	}
-	return sc.Err()
+	return nil
 }
 
 func loadTask() error {
-	TaskData, err := os.Open(TaskFile)
+	taskData, err := os.Open(taskFile)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
 		return err
 	}
-	defer TaskData.Close()
+	defer taskData.Close()
 
-	sc := bufio.NewScanner(TaskData)
-	for sc.Scan() {
-		var t model.Task
-		if err := json.Unmarshal(sc.Bytes(), &t); err != nil {
-			return err
-		}
-		muTasks.Lock()
-		tasks = append(tasks, t)
-		muTasks.Unlock()
-	}
-	return sc.Err()
-}
-
-func appendJSON(path string, v any) error {
-	data, err := json.Marshal(v)
+	rows, err := csv.NewReader(taskData).ReadAll()
 	if err != nil {
 		return err
 	}
+	for _, row := range rows[1:] {
+		id, _ := strconv.Atoi(row[0])
+		muTasks.Lock()
+		tasks = append(tasks, model.Task{TaskID: id, Title: row[1]})
+		muTasks.Unlock()
+	}
+	return nil
+}
+
+func appendCSV(path string, row []string) error {
 
 	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -81,6 +84,23 @@ func appendJSON(path string, v any) error {
 	}
 	defer file.Close()
 
-	_, err = file.Write(append(data, '\n'))
-	return err
+	w := csv.NewWriter(file)
+	defer w.Flush()
+	return w.Write(row)
+}
+
+func saveAllCSV(path string, header []string, rows [][]string) error {
+	file, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	w := csv.NewWriter(file)
+	defer w.Flush()
+
+	if err := w.Write(header); err != nil {
+		return err
+	}
+	return w.WriteAll(rows)
 }

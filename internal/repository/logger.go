@@ -35,11 +35,18 @@ func LogNew(ctx context.Context, wg *sync.WaitGroup) {
 			return
 		case <-t.C:
 			muUsers.Lock()
+			if uLast > len(users) {
+				uLast = len(users)
+			}
 			uNew := append([]model.User(nil), users[uLast:]...)
 			uLast = len(users)
 			muUsers.Unlock()
 
 			muTasks.Lock()
+			if tLast > len(tasks) {
+				tLast = len(tasks)
+			}
+
 			tNew := append([]model.Task(nil), tasks[tLast:]...)
 			tLast = len(tasks)
 			muTasks.Unlock()
