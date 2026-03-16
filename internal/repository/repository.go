@@ -55,12 +55,12 @@ func Add(ctx context.Context, in <-chan Storable, wg *sync.WaitGroup) {
 	}
 }
 
-func GetAllUsers() []model.User {
+func GetAllUsers() ([]model.User, error) {
 	muUsers.Lock()
 	defer muUsers.Unlock()
 	result := make([]model.User, len(users))
 	copy(result, users)
-	return result
+	return result, nil
 }
 
 func GetUserByID(id int) (model.User, error) {
@@ -110,12 +110,12 @@ func DeleteUser(id int) error {
 	return ErrNotFound
 }
 
-func GetAllTasks() []model.Task {
+func GetAllTasks() ([]model.Task, error) {
 	muTasks.Lock()
 	defer muTasks.Unlock()
 	result := make([]model.Task, len(tasks))
 	copy(result, tasks)
-	return result
+	return result, nil
 }
 
 func GetTaskByID(id int) (model.Task, error) {
