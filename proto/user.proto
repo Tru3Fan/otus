@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "pkg/pb";
+
+service UserService {
+	rpc CreateUser(CreateUserRequest) returns (UserResponse);
+	rpc GetUser(GetUserRequest) returns (UserResponse);
+	rpc GetUsers(GetUsersRequest) returns (GetUsersResponse);
+	rpc UpdateUser(UpdateUserRequest) returns (UserResponse);
+	rpc DeleteUser(DeleteUserRequest) returns (UserResponse);
+}
+
+message CreateUserRequest {
+	string username = 1;
+}
+
+message GetUserRequest {
+	int32 id = 1;
+}
+
+message GetUsersRequest {}
+
+message UpdateUserRequest {
+	int32 id = 1;
+	string username = 2;
+}
+
+message DeleteUserRequest {
+	int32 id = 1;
+}
+
+message UserResponse {
+	int32 id = 1;
+	string username = 2;
+}
+
+message GetUsersResponse {
+	repeated UserResponse users = 1;
+}
+
+message DeleteResponse{
+  string message = 1;
+}
