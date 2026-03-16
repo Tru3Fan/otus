@@ -31,7 +31,11 @@ func CreateTask(c *gin.Context) {
 
 // GET /api/tasks
 func GetTasks(c *gin.Context) {
-	all := repository.GetAllTasks()
+	all, err := repository.GetAllTasks()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	if all == nil {
 		all = []model.Task{}
 	}
