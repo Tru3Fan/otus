@@ -47,7 +47,11 @@ func CreateUser(c *gin.Context) {
 // @Success 200 {array} model.User
 // @Router /api/users [get]
 func GetUsers(c *gin.Context) {
-	all := repository.GetAllUsers()
+	all, err := repository.GetAllUsers()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 	if all == nil {
 		all = []model.User{}
 	}
