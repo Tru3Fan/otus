@@ -32,7 +32,10 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.U
 }
 
 func (s *UserServer) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
-	all := repository.GetAllUsers()
+	all, err := repository.GetAllUsers()
+	if err != nil {
+		return nil, err
+	}
 	resp := make([]*pb.UserResponse, len(all))
 	for i, u := range all {
 		resp[i] = &pb.UserResponse{Id: int32(u.UserID), Username: u.Username}
@@ -71,7 +74,10 @@ func (s *TaskServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 }
 
 func (s *TaskServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb.GetTasksResponse, error) {
-	all := repository.GetAllTasks()
+	all, err := repository.GetAllTasks()
+	if err != nil {
+		return nil, err
+	}
 	resp := make([]*pb.TaskResponse, len(all))
 	for i, u := range all {
 		resp[i] = &pb.TaskResponse{Id: int32(u.TaskID), Title: u.Title}
