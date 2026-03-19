@@ -8,10 +8,24 @@ import (
 	"strconv"
 )
 
-const (
-	userFile = "./data/users.csv"
-	taskFile = "./data/tasks.csv"
-)
+//const (
+//	userFile = "./data/users.csv"
+//	taskFile = "./data/tasks.csv"
+//)
+
+func userFilePath() string {
+	if dir := os.Getenv("DATA_DIR"); dir != "" {
+		return dir + "/users.csv"
+	}
+	return "./data/users.csv"
+}
+
+func taskFilePath() string {
+	if dir := os.Getenv("DATA_DIR"); dir != "" {
+		return dir + "/tasks.csv"
+	}
+	return "./data/tasks.csv"
+}
 
 func LoadAllData() error {
 	if err := loadUser(); err != nil {
@@ -24,7 +38,7 @@ func LoadAllData() error {
 }
 
 func loadUser() error {
-	userData, err := os.Open(userFile)
+	userData, err := os.Open(userFilePath())
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
@@ -54,7 +68,7 @@ func loadUser() error {
 }
 
 func loadTask() error {
-	taskData, err := os.Open(taskFile)
+	taskData, err := os.Open(taskFilePath())
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil

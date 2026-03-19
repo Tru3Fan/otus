@@ -62,6 +62,12 @@ func main() {
 	wg.Add(1)
 	go repository.LogNew(ctx, &wg)
 
+	userSvc := service.NewUserService()
+	taskSvc := service.NewTaskService()
+
+	userHandler := handler.NewUserHandler(userSvc)
+	taskHandler := handler.NewTaskHandler(taskSvc)
+
 	//Server 8080
 	r := gin.Default()
 
@@ -70,21 +76,21 @@ func main() {
 	api := r.Group("/api")
 	{
 		api.POST("/login", handler.Login)
-		api.GET("/users", handler.GetUsers)
-		api.GET("/user/:id", handler.GetUser)
-		api.GET("/tasks", handler.GetTasks)
-		api.GET("/task/:id", handler.GetTask)
+		api.GET("/users", userHandler.GetUsers)
+		api.GET("/user/:id", userHandler.GetUser)
+		api.GET("/tasks", taskHandler.GetTasks)
+		api.GET("/task/:id", taskHandler.GetTask)
 
 		protected := api.Group("/")
 		protected.Use(handler.AuthMiddleware())
 		{
-			protected.POST("/user", handler.CreateUser)
-			protected.PUT("/user/:id", handler.UpdateUser)
-			protected.DELETE("/user/:id", handler.DeleteUser)
+			protected.POST("/user", userHandler.CreateUser)
+			protected.PUT("/user/:id", userHandler.UpdateUser)
+			protected.DELETE("/user/:id", userHandler.DeleteUser)
 
-			protected.POST("/task", handler.CreateTask)
-			protected.PUT("/task/:id", handler.UpdateTask)
-			protected.DELETE("/task/:id", handler.DeleteTask)
+			protected.POST("/task", taskHandler.CreateTask)
+			protected.PUT("/task/:id", taskHandler.UpdateTask)
+			protected.DELETE("/task/:id", taskHandler.DeleteTask)
 		}
 	}
 
