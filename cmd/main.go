@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"otus/internal/db"
+	"otus/internal/generat"
 	grpcserver "otus/internal/grpc"
 	"otus/internal/handler"
 	"otus/internal/repository"
@@ -42,6 +44,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := db.Connect(); err != nil {
+		fmt.Println("Error connecting to database", err)
+		os.Exit(1)
+	}
+	defer db.Disconnect()
+
 	if err := repository.LoadAllData(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -54,7 +62,7 @@ func main() {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go service.GenerateAndCreate(ctx, ch, &wg)
+	go generat.GenerateAndCreate(ctx, ch, &wg)
 
 	wg.Add(1)
 	go repository.Add(ctx, ch, &wg)

@@ -19,27 +19,43 @@ func NewTaskService() TaskService {
 	return &taskServiceImpl{}
 }
 
-func (u *taskServiceImpl) CreateTask(title string) (model.Task, error) {
+func (s *taskServiceImpl) CreateTask(title string) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	return repository.AddTask(model.Task{Title: title})
+	t, err := repository.MongoAddTask(model.Task{Title: title})
+	if err != nil {
+		return model.Task{}, err
+	}
+	_ = repository.LogAction("create", "task", t.TaskID)
+	return t, nil
+
 }
 
-func (u *taskServiceImpl) GetTask(id int) (model.Task, error) {
-	return repository.GetTaskByID(id)
+func (s *taskServiceImpl) GetTask(id int) (model.Task, error) {
+	return repository.MongoGetTaskByID(id)
 }
-func (u *taskServiceImpl) GetTasks() ([]model.Task, error) {
-	return repository.GetAllTasks()
+func (s *taskServiceImpl) GetTasks() ([]model.Task, error) {
+	return repository.MongoGetAllTasks()
 }
 
-func (u *taskServiceImpl) UpdateTask(id int, title string) (model.Task, error) {
+func (s *taskServiceImpl) UpdateTask(id int, title string) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	return repository.UpdateTask(id, model.Task{Title: title})
+	t, err := repository.MongoUpdateTask(id, model.Task{Title: title})
+	if err != nil {
+		return model.Task{}, err
+	}
+	_ = repository.LogAction("update", "task", t.TaskID)
+	return t, nil
 }
 
-func (u *taskServiceImpl) DeleteTask(id int) error {
-	return repository.DeleteTask(id)
+func (s *taskServiceImpl) DeleteTask(id int) error {
+	err := repository.MongoDeleteTask(id)
+	if err != nil {
+		return err
+	}
+	_ = repository.LogAction("delete", "task", id)
+	return nil
 }
