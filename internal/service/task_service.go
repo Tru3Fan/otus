@@ -23,7 +23,7 @@ func (s *taskServiceImpl) CreateTask(title string) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	t, err := repository.MongoAddTask(model.Task{Title: title})
+	t, err := repository.PgAddTask(model.Task{Title: title})
 	if err != nil {
 		return model.Task{}, err
 	}
@@ -33,17 +33,17 @@ func (s *taskServiceImpl) CreateTask(title string) (model.Task, error) {
 }
 
 func (s *taskServiceImpl) GetTask(id int) (model.Task, error) {
-	return repository.MongoGetTaskByID(id)
+	return repository.PgGetTaskByID(id)
 }
 func (s *taskServiceImpl) GetTasks() ([]model.Task, error) {
-	return repository.MongoGetAllTasks()
+	return repository.PgGetAllTasks()
 }
 
 func (s *taskServiceImpl) UpdateTask(id int, title string) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	t, err := repository.MongoUpdateTask(id, model.Task{Title: title})
+	t, err := repository.PgUpdateTask(id, model.Task{Title: title})
 	if err != nil {
 		return model.Task{}, err
 	}
@@ -52,7 +52,7 @@ func (s *taskServiceImpl) UpdateTask(id int, title string) (model.Task, error) {
 }
 
 func (s *taskServiceImpl) DeleteTask(id int) error {
-	err := repository.MongoDeleteTask(id)
+	err := repository.PgDeleteTask(id)
 	if err != nil {
 		return err
 	}

@@ -23,7 +23,7 @@ func (s *userServiceImpl) CreateUser(username string) (model.User, error) {
 	if username == "" {
 		return model.User{}, ErrEmptyUsername
 	}
-	u, err := repository.MongoAddUser(model.User{Username: username})
+	u, err := repository.PgAddUser(model.User{Username: username})
 	if err != nil {
 		return model.User{}, err
 	}
@@ -32,16 +32,16 @@ func (s *userServiceImpl) CreateUser(username string) (model.User, error) {
 }
 
 func (s *userServiceImpl) GetUser(id int) (model.User, error) {
-	return repository.MongoGetUserByID(id)
+	return repository.PgGetUserByID(id)
 }
 func (s *userServiceImpl) GetUsers() ([]model.User, error) {
-	return repository.MongoGetAllUsers()
+	return repository.PgGetAllUsers()
 }
 func (s *userServiceImpl) UpdateUser(id int, username string) (model.User, error) {
 	if username == "" {
 		return model.User{}, ErrEmptyUsername
 	}
-	u, err := repository.MongoUpdateUser(id, model.User{Username: username})
+	u, err := repository.PgUpdateUser(id, model.User{Username: username})
 	if err != nil {
 		return model.User{}, err
 	}
@@ -49,7 +49,7 @@ func (s *userServiceImpl) UpdateUser(id int, username string) (model.User, error
 	return u, nil
 }
 func (s *userServiceImpl) DeleteUser(id int) error {
-	err := repository.MongoDeleteUser(id)
+	err := repository.PgDeleteUser(id)
 	if err != nil {
 		return err
 	}

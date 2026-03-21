@@ -48,6 +48,7 @@ func main() {
 		fmt.Println("Error connecting to database", err)
 		os.Exit(1)
 	}
+	fmt.Println("all database connection established")
 	defer db.Disconnect()
 
 	if err := repository.LoadAllData(); err != nil {
