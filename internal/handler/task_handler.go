@@ -5,12 +5,20 @@ import (
 	"net/http"
 	"otus/internal/model"
 	"otus/internal/repository"
+	"otus/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
 
 type TaskRequest struct {
 	Title string `json:"title" binding:"required"`
+}
+type TaskHandler struct {
+	svc service.TaskService
+}
+
+func NewTaskHandler(svc service.TaskService) *TaskHandler {
+	return &TaskHandler{svc: svc}
 }
 
 // CreateTask godoc
@@ -24,14 +32,14 @@ type TaskRequest struct {
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
 // @Router /api/task [post]
-func CreateTask(c *gin.Context) {
+func (h *TaskHandler) CreateTask(c *gin.Context) {
 	var req TaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	t, err := repository.AddTask(model.Task{Title: req.Title})
+	t, err := h.svc.CreateTask(req.Title)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add task"})
 		return
@@ -45,8 +53,8 @@ func CreateTask(c *gin.Context) {
 // @Produce json
 // @Success 200 {array} model.Task
 // @Router /api/tasks [get]
-func GetTasks(c *gin.Context) {
-	all, err := repository.GetAllTasks()
+func (h *TaskHandler) GetTasks(c *gin.Context) {
+	all, err := h.svc.GetTasks()
 	if err != nil {
 
 		return
@@ -66,13 +74,13 @@ func GetTasks(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/task/{id} [get]
-func GetTask(c *gin.Context) {
+func (h *TaskHandler) GetTask(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
 		return
 	}
 
-	t, err := repository.GetTaskByID(id)
+	t, err := h.svc.GetTask(id)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
@@ -96,7 +104,7 @@ func GetTask(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/task/{id} [put]
-func UpdateTask(c *gin.Context) {
+func (h *TaskHandler) UpdateTask(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
 		return
@@ -107,7 +115,7 @@ func UpdateTask(c *gin.Context) {
 		return
 	}
 
-	updated, err := repository.UpdateTask(id, model.Task{Title: req.Title})
+	updated, err := h.svc.UpdateTask(id, req.Title)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
@@ -129,13 +137,13 @@ func UpdateTask(c *gin.Context) {
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string
 // @Router /api/task/{id} [delete]
-func DeleteTask(c *gin.Context) {
+func (h *TaskHandler) DeleteTask(c *gin.Context) {
 	id, err := parseID(c)
 	if err != nil {
 		return
 	}
 
-	if err := repository.DeleteTask(id); err != nil {
+	if err := h.svc.DeleteTask(id); err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
 			return
