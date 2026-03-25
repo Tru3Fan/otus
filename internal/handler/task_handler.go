@@ -48,7 +48,7 @@ func CreateTask(c *gin.Context) {
 func GetTasks(c *gin.Context) {
 	all, err := repository.GetAllTasks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
 		return
 	}
 	if all == nil {
