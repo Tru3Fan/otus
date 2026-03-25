@@ -49,7 +49,7 @@ func CreateUser(c *gin.Context) {
 func GetUsers(c *gin.Context) {
 	all, err := repository.GetAllUsers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch users"})
+
 		return
 	}
 	if all == nil {
