@@ -29,7 +29,7 @@ func NewUserHandler(svc service.UserService) *UserHandler {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param user body internal_handler.UserRequest true "Данные пользователя"
+// @Param user body handler.UserRequest true "Данные пользователя"
 // @Success 201 {object} model.User
 // @Failure 400 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -101,7 +101,7 @@ func (h *UserHandler) GetUser(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Param id path int true "ID пользователя"
-// @Param user body internal_handler.UserRequest true "Новые данные"
+// @Param user body  handler.UserRequest true "Новые данные"
 // @Success 200 {object} model.User
 // @Failure 400 {object} map[string]string
 // @Failure 404 {object} map[string]string

@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  internal_handler.LoginRequest:
+  handler.LoginRequest:
     properties:
       login:
         type: string
@@ -10,29 +10,39 @@ definitions:
     - login
     - password
     type: object
-  internal_handler.TaskRequest:
+  handler.TaskRequest:
     properties:
       title:
         type: string
+      user_id:
+        type: integer
     required:
     - title
     type: object
-  internal_handler.UserRequest:
+  handler.UserRequest:
     properties:
       username:
         type: string
     required:
     - username
     type: object
-  otus_internal_model.Task:
+  model.Task:
     properties:
+      created_at:
+        type: string
       task_id:
         type: integer
       title:
         type: string
+      user_id:
+        type: integer
     type: object
-  otus_internal_model.User:
+  model.User:
     properties:
+      created_at:
+        type: string
+      email:
+        type: string
       user_id:
         type: integer
       username:
@@ -55,7 +65,7 @@ paths:
         name: credentials
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.LoginRequest'
+          $ref: '#/definitions/handler.LoginRequest'
       produces:
       - application/json
       responses:
@@ -90,14 +100,14 @@ paths:
         name: task
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.TaskRequest'
+          $ref: '#/definitions/handler.TaskRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/otus_internal_model.Task'
+            $ref: '#/definitions/model.Task'
         "400":
           description: Bad Request
           schema:
@@ -162,7 +172,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/otus_internal_model.Task'
+            $ref: '#/definitions/model.Task'
         "400":
           description: Bad Request
           schema:
@@ -192,14 +202,14 @@ paths:
         name: task
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.TaskRequest'
+          $ref: '#/definitions/handler.TaskRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/otus_internal_model.Task'
+            $ref: '#/definitions/model.Task'
         "400":
           description: Bad Request
           schema:
@@ -226,7 +236,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/otus_internal_model.Task'
+              $ref: '#/definitions/model.Task'
             type: array
       summary: Получить все задачи
       tags:
@@ -241,14 +251,14 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.UserRequest'
+          $ref: '#/definitions/handler.UserRequest'
       produces:
       - application/json
       responses:
         "201":
           description: Created
           schema:
-            $ref: '#/definitions/otus_internal_model.User'
+            $ref: '#/definitions/model.User'
         "400":
           description: Bad Request
           schema:
@@ -313,7 +323,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/otus_internal_model.User'
+            $ref: '#/definitions/model.User'
         "400":
           description: Bad Request
           schema:
@@ -343,14 +353,14 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/internal_handler.UserRequest'
+          $ref: '#/definitions/handler.UserRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/otus_internal_model.User'
+            $ref: '#/definitions/model.User'
         "400":
           description: Bad Request
           schema:
@@ -368,6 +378,32 @@ paths:
       summary: Обновить пользователя
       tags:
       - users
+  /api/user/{id}/tasks:
+    get:
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Task'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Получить задачи пользователя
+      tags:
+      - tasks
   /api/users:
     get:
       produces:
@@ -377,7 +413,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/otus_internal_model.User'
+              $ref: '#/definitions/model.User'
             type: array
       summary: Получить всех пользователей
       tags:

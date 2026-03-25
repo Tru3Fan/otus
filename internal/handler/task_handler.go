@@ -11,7 +11,8 @@ import (
 )
 
 type TaskRequest struct {
-	Title string `json:"title" binding:"required"`
+	Title  string `json:"title" binding:"required"`
+	UserID int    `json:"user_id"`
 }
 type TaskHandler struct {
 	svc service.TaskService
@@ -39,7 +40,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	t, err := h.svc.CreateTask(req.Title)
+	t, err := h.svc.CreateTask(req.Title, req.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add task"})
 		return
@@ -92,6 +93,30 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
+// GetTasksByUser godoc
+// @Summary Получить задачи пользователя
+// @Tags tasks
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Success 200 {array} model.Task
+// @Failure 400 {object} map[string]string
+// @Router /api/user/{id}/tasks [get]
+func (h *TaskHandler) GetTasksByUser(c *gin.Context) {
+	id, err := parseID(c)
+	if err != nil {
+		return
+	}
+	t, err := h.svc.GetTasksByUser(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if t == nil {
+		t = []model.Task{}
+	}
+	c.JSON(http.StatusOK, t)
+}
+
 // UpdateTask godoc
 // @Summary Обновить задачу
 // @Tags tasks
@@ -115,7 +140,7 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.svc.UpdateTask(id, req.Title)
+	updated, err := h.svc.UpdateTask(id, req.Title, req.UserID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})

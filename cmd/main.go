@@ -87,6 +87,7 @@ func main() {
 		api.POST("/login", handler.Login)
 		api.GET("/users", userHandler.GetUsers)
 		api.GET("/user/:id", userHandler.GetUser)
+		api.GET("/user/:id/tasks", taskHandler.GetTasksByUser)
 		api.GET("/tasks", taskHandler.GetTasks)
 		api.GET("/task/:id", taskHandler.GetTask)
 

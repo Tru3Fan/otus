@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	dsn := "host=localhost port=5432 user=admin password=secret dbname=otus sslmode=disable"
+	dsn := "POSTGRES_DSN"
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		fmt.Println("Open error:", err)
