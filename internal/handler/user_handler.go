@@ -58,7 +58,7 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 func (h *UserHandler) GetUsers(c *gin.Context) {
 	all, err := h.svc.GetUsers()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
 		return
 	}
 	if all == nil {

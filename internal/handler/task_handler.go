@@ -56,7 +56,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 func (h *TaskHandler) GetTasks(c *gin.Context) {
 	all, err := h.svc.GetTasks()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch tasks"})
+
 		return
 	}
 	if all == nil {
