@@ -5,6 +5,7 @@ import (
 	"os"
 	"otus/internal/model"
 	"otus/internal/repository"
+	"otus/internal/repository/csv"
 	"otus/internal/service"
 	"testing"
 
@@ -17,8 +18,9 @@ type MockUserRepo struct {
 
 func setupUserService() service.UserService {
 	os.Setenv("DATA_DIR", "../../data")
-	repository.ResetUsers()
-	return service.NewUserService()
+	csv.ResetUsers()
+	repo := csv.NewUserRepo()
+	return service.NewUserService(repo)
 }
 
 func TestCreateUser(t *testing.T) {

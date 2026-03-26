@@ -10,6 +10,9 @@ import (
 const logTTL = 24 * time.Hour
 
 func LogAction(action string, entityType string, id int) error {
+	if db.RedisClient == nil {
+		return nil
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 

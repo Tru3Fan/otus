@@ -16,13 +16,13 @@ func GenerateAndCreate(ctx context.Context, out chan<- csv.Storable, wg *sync.Wa
 		select {
 		case <-ctx.Done():
 			return
-		case out <- model.User{4, "Ivan"}:
+		case out <- model.User{UserID: 4, Username: "Ivan"}:
 		}
 
 		select {
 		case <-ctx.Done():
 			return
-		case out <- model.Task{1, "Dream"}:
+		case out <- model.Task{TaskID: 1, Title: "Dream"}:
 		}
 	}
 }

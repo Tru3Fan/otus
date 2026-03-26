@@ -14,7 +14,8 @@ import (
 func setupTaskService() service.TaskService {
 	os.Setenv("DATA_DIR", "../../data")
 	csv.ResetTasks()
-	return service.NewTaskService()
+	repo := csv.NewTaskRepo()
+	return service.NewTaskService(repo)
 }
 
 func TestCreateTask(t *testing.T) {
@@ -38,7 +39,7 @@ func TestCreateTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
-			task, err := svc.CreateTask(tt.title)
+			task, err := svc.CreateTask(tt.title, 0)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -71,7 +72,7 @@ func TestGetTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
-			svc.CreateTask("Dream")
+			svc.CreateTask("Dream", 0)
 
 			_, err := svc.GetTask(tt.id)
 			if tt.wantErr {
@@ -114,9 +115,9 @@ func TestUpdateTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
-			svc.CreateTask("Dream")
+			svc.CreateTask("Dream", 0)
 
-			task, err := svc.UpdateTask(tt.id, tt.title)
+			task, err := svc.UpdateTask(tt.id, tt.title, 0)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -148,7 +149,7 @@ func TestDeleteTask(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
-			svc.CreateTask("Dream")
+			svc.CreateTask("Dream", 0)
 
 			err := svc.DeleteTask(tt.id)
 			if tt.wantErr {
@@ -182,7 +183,7 @@ func TestGetTasks(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
 			for i := 0; i < tt.seedCount; i++ {
-				svc.CreateTask("Dream")
+				svc.CreateTask("Dream", 0)
 			}
 
 			tasks, err := svc.GetTasks()
