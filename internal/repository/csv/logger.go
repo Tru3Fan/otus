@@ -1,4 +1,4 @@
-package repository
+package csv
 
 import (
 	"context"
@@ -21,7 +21,6 @@ func Counts() (usersCount, tasksCount int) {
 }
 
 func LogNew(ctx context.Context, wg *sync.WaitGroup) {
-
 	defer wg.Done()
 
 	t := time.NewTicker(200 * time.Millisecond)

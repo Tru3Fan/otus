@@ -3,11 +3,11 @@ package generat
 import (
 	"context"
 	"otus/internal/model"
-	"otus/internal/repository"
+	"otus/internal/repository/csv"
 	"sync"
 )
 
-func GenerateAndCreate(ctx context.Context, out chan<- repository.Storable, wg *sync.WaitGroup) {
+func GenerateAndCreate(ctx context.Context, out chan<- csv.Storable, wg *sync.WaitGroup) {
 	defer wg.Done()
 	defer close(out)
 

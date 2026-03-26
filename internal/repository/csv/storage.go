@@ -1,4 +1,4 @@
-package repository
+package csv
 
 import (
 	"encoding/csv"

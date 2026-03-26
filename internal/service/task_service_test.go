@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"otus/internal/repository"
+	"otus/internal/repository/csv"
 	"otus/internal/service"
 	"testing"
 
@@ -12,7 +13,7 @@ import (
 
 func setupTaskService() service.TaskService {
 	os.Setenv("DATA_DIR", "../../data")
-	repository.ResetTasks()
+	csv.ResetTasks()
 	return service.NewTaskService()
 }
 
