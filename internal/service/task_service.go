@@ -3,6 +3,7 @@ package service
 import (
 	"otus/internal/model"
 	"otus/internal/repository"
+	"otus/internal/repository/logger"
 )
 
 type TaskService interface {
@@ -10,57 +11,58 @@ type TaskService interface {
 	GetTask(id int) (model.Task, error)
 	GetTasks() ([]model.Task, error)
 	UpdateTask(id int, title string, userID int) (model.Task, error)
-	GetTasksByUser(userID int) ([]model.Task, error)
 	DeleteTask(id int) error
+	GetTasksByUser(userID int) ([]model.Task, error)
 }
 
-type taskServiceImpl struct{}
+type taskServiceImpl struct {
+	repo repository.TaskRepository
+}
 
-func NewTaskService() TaskService {
-	return &taskServiceImpl{}
+func NewTaskService(repo repository.TaskRepository) TaskService {
+	return &taskServiceImpl{repo: repo}
 }
 
 func (s *taskServiceImpl) CreateTask(title string, userID int) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-
-	t, err := repository.PgAddTask(model.Task{Title: title, UserID: userID})
+	t, err := s.repo.AddTask(model.Task{Title: title})
 	if err != nil {
 		return model.Task{}, err
 	}
-	_ = repository.LogAction("create", "task", t.TaskID)
+	_ = logger.LogAction("create", "task", t.TaskID)
 	return t, nil
 
 }
 
 func (s *taskServiceImpl) GetTask(id int) (model.Task, error) {
-	return repository.PgGetTaskByID(id)
+	return s.repo.GetTaskByID(id)
 }
 func (s *taskServiceImpl) GetTasks() ([]model.Task, error) {
-	return repository.PgGetAllTasks()
+	return s.repo.GetAllTasks()
 }
 func (s *taskServiceImpl) GetTasksByUser(userID int) ([]model.Task, error) {
-	return repository.PgGetTasksByUserID(userID)
+	return s.repo.GetTasksByUserID(userID)
 }
 
 func (s *taskServiceImpl) UpdateTask(id int, title string, userID int) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	t, err := repository.PgUpdateTask(id, model.Task{Title: title, UserID: userID})
+	t, err := s.repo.UpdateTask(id, model.Task{Title: title})
 	if err != nil {
 		return model.Task{}, err
 	}
-	_ = repository.LogAction("update", "task", t.TaskID)
+	_ = logger.LogAction("update", "task", t.TaskID)
 	return t, nil
 }
 
 func (s *taskServiceImpl) DeleteTask(id int) error {
-	err := repository.PgDeleteTask(id)
+	err := s.repo.DeleteTask(id)
 	if err != nil {
 		return err
 	}
-	_ = repository.LogAction("delete", "task", id)
+	_ = logger.LogAction("delete", "task", id)
 	return nil
 }

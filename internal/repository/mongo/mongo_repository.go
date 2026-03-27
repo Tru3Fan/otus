@@ -1,14 +1,26 @@
-package repository
+package mongo
 
 import (
 	"context"
 	"otus/internal/db"
 	"otus/internal/model"
+	"otus/internal/repository"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
+
+type UserRepo struct{}
+type TaskRepo struct{}
+
+func NewUserRepo() repository.UserRepository {
+	return &UserRepo{}
+}
+
+func NewTaskRepo() repository.TaskRepository {
+	return &TaskRepo{}
+}
 
 func getUserCollection() *mongo.Collection {
 	return db.MongoDB.Collection("user")
@@ -20,7 +32,7 @@ func getTaskCollection() *mongo.Collection {
 
 //---------------User------------------
 
-func MongoAddUser(u model.User) (model.User, error) {
+func (r *UserRepo) AddUser(u model.User) (model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -32,19 +44,19 @@ func MongoAddUser(u model.User) (model.User, error) {
 	return u, nil
 }
 
-func MongoGetUserByID(id int) (model.User, error) {
+func (r *UserRepo) GetUserByID(id int) (model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var u model.User
 	err := getUserCollection().FindOne(ctx, bson.M{"userid": id}).Decode(&u)
 	if err != nil {
-		return model.User{}, ErrNotFound
+		return model.User{}, repository.ErrNotFound
 	}
 	return u, nil
 }
 
-func MongoGetAllUsers() ([]model.User, error) {
+func (r *UserRepo) GetAllUsers() ([]model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -61,7 +73,7 @@ func MongoGetAllUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func MongoUpdateUser(id int, updated model.User) (model.User, error) {
+func (r *UserRepo) UpdateUser(id int, updated model.User) (model.User, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -71,12 +83,12 @@ func MongoUpdateUser(id int, updated model.User) (model.User, error) {
 		return model.User{}, err
 	}
 	if result.MatchedCount == 0 {
-		return model.User{}, ErrNotFound
+		return model.User{}, repository.ErrNotFound
 	}
 	return updated, nil
 }
 
-func MongoDeleteUser(id int) error {
+func (r *UserRepo) DeleteUser(id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -85,14 +97,14 @@ func MongoDeleteUser(id int) error {
 		return err
 	}
 	if result.DeletedCount == 0 {
-		return ErrNotFound
+		return repository.ErrNotFound
 	}
 	return nil
 }
 
 //----------------Task-------------------------
 
-func MongoAddTask(t model.Task) (model.Task, error) {
+func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -104,19 +116,19 @@ func MongoAddTask(t model.Task) (model.Task, error) {
 	return t, nil
 }
 
-func MongoGetTaskByID(id int) (model.Task, error) {
+func (r *TaskRepo) GetTaskByID(id int) (model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	var t model.Task
 	err := getTaskCollection().FindOne(ctx, bson.M{"taskid": id}).Decode(&t)
 	if err != nil {
-		return model.Task{}, ErrNotFound
+		return model.Task{}, repository.ErrNotFound
 	}
 	return t, nil
 }
 
-func MongoGetAllTasks() ([]model.Task, error) {
+func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -133,7 +145,7 @@ func MongoGetAllTasks() ([]model.Task, error) {
 	return tasks, nil
 }
 
-func MongoUpdateTask(id int, updated model.Task) (model.Task, error) {
+func (r *TaskRepo) UpdateTask(id int, updated model.Task) (model.Task, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -143,12 +155,12 @@ func MongoUpdateTask(id int, updated model.Task) (model.Task, error) {
 		return model.Task{}, err
 	}
 	if result.MatchedCount == 0 {
-		return model.Task{}, ErrNotFound
+		return model.Task{}, repository.ErrNotFound
 	}
 	return updated, nil
 }
 
-func MongoDeleteTask(id int) error {
+func (r *TaskRepo) DeleteTask(id int) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
@@ -157,7 +169,46 @@ func MongoDeleteTask(id int) error {
 		return err
 	}
 	if result.DeletedCount == 0 {
-		return ErrNotFound
+		return repository.ErrNotFound
 	}
 	return nil
+}
+
+func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := getTaskCollection().Find(ctx, bson.M{"userid": userID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var tasks []model.Task
+	if err = cursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
+func nextUserID() int {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	count, err := getUserCollection().CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return 1
+	}
+	return int(count) + 1
+}
+
+func nextTaskID() int {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	count, err := getTaskCollection().CountDocuments(ctx, bson.M{})
+	if err != nil {
+		return 1
+	}
+	return int(count) + 1
 }

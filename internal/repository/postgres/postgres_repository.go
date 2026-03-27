@@ -1,12 +1,24 @@
-package repository
+package postgres
 
 import (
 	"database/sql"
 	"otus/internal/db"
 	"otus/internal/model"
+	"otus/internal/repository"
 )
 
-func PgAddUser(u model.User) (model.User, error) {
+type UserRepo struct{}
+type TaskRepo struct{}
+
+func NewUserRepo() repository.UserRepository {
+	return &UserRepo{}
+}
+
+func NewTaskRepo() repository.TaskRepository {
+	return &TaskRepo{}
+}
+
+func (r *UserRepo) AddUser(u model.User) (model.User, error) {
 	query := `INSERT INTO users (username, email) VALUES ($1, $2) RETURNING id, username, email`
 	row := db.PostgresDB.QueryRow(query, u.Username, u.Email)
 
@@ -18,14 +30,14 @@ func PgAddUser(u model.User) (model.User, error) {
 	return created, nil
 }
 
-func PgGetUserByID(id int) (model.User, error) {
+func (r *UserRepo) GetUserByID(id int) (model.User, error) {
 	query := `SELECT id, username, email FROM users WHERE id = $1`
 	row := db.PostgresDB.QueryRow(query, id)
 
 	var u model.User
 	err := row.Scan(&u.UserID, &u.Username, &u.Email)
 	if err == sql.ErrNoRows {
-		return model.User{}, ErrNotFound
+		return model.User{}, repository.ErrNotFound
 	}
 	if err != nil {
 		return model.User{}, err
@@ -33,7 +45,7 @@ func PgGetUserByID(id int) (model.User, error) {
 	return u, nil
 }
 
-func PgGetAllUsers() ([]model.User, error) {
+func (r *UserRepo) GetAllUsers() ([]model.User, error) {
 	query := `SELECT id, username, email FROM users`
 	rows, err := db.PostgresDB.Query(query)
 	if err != nil {
@@ -52,14 +64,14 @@ func PgGetAllUsers() ([]model.User, error) {
 	return users, nil
 }
 
-func PgUpdateUser(id int, updated model.User) (model.User, error) {
+func (r *UserRepo) UpdateUser(id int, updated model.User) (model.User, error) {
 	query := `UPDATE users SET username = $1, email = $2 WHERE id = $3 RETURNING id, username, email`
 	row := db.PostgresDB.QueryRow(query, updated.Username, updated.Email, id)
 
 	var u model.User
 	err := row.Scan(&u.UserID, &u.Username, &u.Email)
 	if err == sql.ErrNoRows {
-		return model.User{}, ErrNotFound
+		return model.User{}, repository.ErrNotFound
 	}
 	if err != nil {
 		return model.User{}, err
@@ -67,7 +79,7 @@ func PgUpdateUser(id int, updated model.User) (model.User, error) {
 	return u, nil
 }
 
-func PgDeleteUser(id int) error {
+func (r *UserRepo) DeleteUser(id int) error {
 	query := `DELETE FROM users WHERE id = $1`
 	result, err := db.PostgresDB.Exec(query, id)
 	if err != nil {
@@ -75,12 +87,12 @@ func PgDeleteUser(id int) error {
 	}
 	count, _ := result.RowsAffected()
 	if count == 0 {
-		return ErrNotFound
+		return repository.ErrNotFound
 	}
 	return nil
 }
 
-func PgAddTask(t model.Task) (model.Task, error) {
+func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 	query := `INSERT INTO tasks (title, user_id) VALUES ($1, NULLIF($2, 0)) RETURNING id, title, user_id`
 	row := db.PostgresDB.QueryRow(query, t.Title, t.UserID)
 
@@ -96,7 +108,7 @@ func PgAddTask(t model.Task) (model.Task, error) {
 	return created, nil
 }
 
-func PgGetTaskByID(id int) (model.Task, error) {
+func (r *TaskRepo) GetTaskByID(id int) (model.Task, error) {
 	query := `SELECT id, title, user_id FROM tasks WHERE id = $1`
 	row := db.PostgresDB.QueryRow(query, id)
 
@@ -104,7 +116,7 @@ func PgGetTaskByID(id int) (model.Task, error) {
 	var userID sql.NullInt64
 	err := row.Scan(&t.TaskID, &t.Title, &userID)
 	if err == sql.ErrNoRows {
-		return model.Task{}, ErrNotFound
+		return model.Task{}, repository.ErrNotFound
 	}
 	if err != nil {
 		return model.Task{}, err
@@ -115,7 +127,7 @@ func PgGetTaskByID(id int) (model.Task, error) {
 	return t, nil
 }
 
-func PgGetAllTasks() ([]model.Task, error) {
+func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
 	query := `SELECT id, title, user_id FROM tasks`
 	rows, err := db.PostgresDB.Query(query)
 	if err != nil {
@@ -138,7 +150,7 @@ func PgGetAllTasks() ([]model.Task, error) {
 	return tasks, nil
 }
 
-func PgUpdateTask(id int, updated model.Task) (model.Task, error) {
+func (r *TaskRepo) UpdateTask(id int, updated model.Task) (model.Task, error) {
 	query := `UPDATE tasks SET title = $1, user_id = NULLIF($2, 0)  WHERE id = $3 RETURNING id, title, user_id`
 	row := db.PostgresDB.QueryRow(query, updated.Title, updated.UserID, id)
 
@@ -146,7 +158,7 @@ func PgUpdateTask(id int, updated model.Task) (model.Task, error) {
 	var userID sql.NullInt64
 	err := row.Scan(&t.TaskID, &t.Title, &userID)
 	if err == sql.ErrNoRows {
-		return model.Task{}, ErrNotFound
+		return model.Task{}, repository.ErrNotFound
 	}
 	if err != nil {
 		return model.Task{}, err
@@ -157,7 +169,7 @@ func PgUpdateTask(id int, updated model.Task) (model.Task, error) {
 	return t, nil
 }
 
-func PgGetTasksByUserID(userID int) ([]model.Task, error) {
+func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
 	query := `SELECT id, title, user_id FROM tasks WHERE user_id = $1`
 	rows, err := db.PostgresDB.Query(query, userID)
 	if err != nil {
@@ -180,7 +192,7 @@ func PgGetTasksByUserID(userID int) ([]model.Task, error) {
 	return tasks, nil
 }
 
-func PgDeleteTask(id int) error {
+func (r *TaskRepo) DeleteTask(id int) error {
 	query := `DELETE FROM tasks WHERE id = $1`
 	result, err := db.PostgresDB.Exec(query, id)
 	if err != nil {
@@ -188,12 +200,12 @@ func PgDeleteTask(id int) error {
 	}
 	count, _ := result.RowsAffected()
 	if count == 0 {
-		return ErrNotFound
+		return repository.ErrNotFound
 	}
 	return nil
 }
 
-func PgCreateUserWithTask(u model.User, t model.Task) (model.User, model.Task, error) {
+func (r *TaskRepo) CreateUserWithTask(u model.User, t model.Task) (model.User, model.Task, error) {
 	tx, err := db.PostgresDB.Begin()
 	if err != nil {
 		return model.User{}, model.Task{}, err
