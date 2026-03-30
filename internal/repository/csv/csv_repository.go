@@ -116,6 +116,18 @@ func (r *UserRepo) DeleteUser(id int) error {
 	}
 	return repository.ErrNotFound
 }
+
+func (r *UserRepo) GetUserByTelegramID(telegramID int64) (model.User, error) {
+	muUsers.Lock()
+	defer muUsers.Unlock()
+	for _, u := range users {
+		if u.TelegramUserID == telegramID {
+			return u, nil
+		}
+	}
+	return model.User{}, repository.ErrNotFound
+}
+
 func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 	muTasks.Lock()
 	defer muTasks.Unlock()
@@ -176,6 +188,18 @@ func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
 	var result []model.Task
 	for _, t := range tasks {
 		if t.UserID == userID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
+func (r *TaskRepo) GetTasksByStatus(status string) ([]model.Task, error) {
+	muTasks.Lock()
+	defer muTasks.Unlock()
+	var result []model.Task
+	for _, t := range tasks {
+		if t.Status == status {
 			result = append(result, t)
 		}
 	}

@@ -102,6 +102,10 @@ func (r *UserRepo) DeleteUser(id int) error {
 	return nil
 }
 
+func (r *UserRepo) GetUserByTelegramID(telegramID int64) (model.User, error) {
+	return model.User{}, nil
+}
+
 //----------------Task-------------------------
 
 func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
@@ -189,6 +193,10 @@ func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
 		return nil, err
 	}
 	return tasks, nil
+}
+
+func (r *TaskRepo) GetTasksByStatus(status string) ([]model.Task, error) {
+	return nil, nil
 }
 
 func nextUserID() int {
