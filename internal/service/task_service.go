@@ -13,6 +13,8 @@ type TaskService interface {
 	UpdateTask(id int, title string, userID int) (model.Task, error)
 	DeleteTask(id int) error
 	GetTasksByUser(userID int) ([]model.Task, error)
+	GetTasksByStatus(status string) ([]model.Task, error)
+	UpdateTaskStatus(id int, status string) (model.Task, error)
 }
 
 type taskServiceImpl struct {
@@ -42,10 +44,6 @@ func (s *taskServiceImpl) GetTask(id int) (model.Task, error) {
 func (s *taskServiceImpl) GetTasks() ([]model.Task, error) {
 	return s.repo.GetAllTasks()
 }
-func (s *taskServiceImpl) GetTasksByUser(userID int) ([]model.Task, error) {
-	return s.repo.GetTasksByUserID(userID)
-}
-
 func (s *taskServiceImpl) UpdateTask(id int, title string, userID int) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
@@ -65,4 +63,23 @@ func (s *taskServiceImpl) DeleteTask(id int) error {
 	}
 	_ = logger.LogAction("delete", "task", id)
 	return nil
+}
+func (s *taskServiceImpl) GetTasksByUser(userID int) ([]model.Task, error) {
+	return s.repo.GetTasksByUserID(userID)
+}
+
+func (s *taskServiceImpl) GetTasksByStatus(status string) ([]model.Task, error) {
+	return s.repo.GetTasksByStatus(status)
+}
+
+func (s *taskServiceImpl) UpdateTaskStatus(id int, status string) (model.Task, error) {
+	if status != "pending" && status != "in_progress" && status != "done" {
+		return model.Task{}, ErrInvalidStatus
+	}
+	t, err := s.repo.GetTaskByID(id)
+	if err != nil {
+		return model.Task{}, err
+	}
+	t.Status = status
+	return s.repo.UpdateTask(id, t)
 }

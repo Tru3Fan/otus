@@ -13,6 +13,7 @@ import (
 type TaskRequest struct {
 	Title  string `json:"title" binding:"required"`
 	UserID int    `json:"user_id"`
+	Status string `json:"status"`
 }
 type TaskHandler struct {
 	svc service.TaskService
@@ -177,4 +178,47 @@ func (h *TaskHandler) DeleteTask(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "task deleted"})
+}
+
+func (h *TaskHandler) UpdateTaskStatus(c *gin.Context) {
+	id, err := parseID(c)
+	if err != nil {
+		return
+	}
+
+	var req struct {
+		Status string `json:"status" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	t, err := h.svc.UpdateTaskStatus(id, req.Status)
+	if err != nil {
+		if errors.Is(err, repository.ErrNotFound) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, t)
+}
+
+func (h *TaskHandler) GetTasksByStatus(c *gin.Context) {
+	status := c.Query("status")
+	if status == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "status is required"})
+		return
+	}
+
+	tasks, err := h.svc.GetTasksByStatus(status)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if tasks == nil {
+		tasks = []model.Task{}
+	}
+	c.JSON(http.StatusOK, tasks)
 }

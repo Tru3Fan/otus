@@ -94,6 +94,7 @@ func main() {
 		api.GET("/user/:id/tasks", taskHandler.GetTasksByUser)
 		api.GET("/tasks", taskHandler.GetTasks)
 		api.GET("/task/:id", taskHandler.GetTask)
+		api.GET("/tasks/status", taskHandler.GetTasksByStatus)
 
 		protected := api.Group("/")
 		protected.Use(handler.AuthMiddleware())
@@ -105,6 +106,7 @@ func main() {
 			protected.POST("/task", taskHandler.CreateTask)
 			protected.PUT("/task/:id", taskHandler.UpdateTask)
 			protected.DELETE("/task/:id", taskHandler.DeleteTask)
+			protected.PUT("/task/:id/status", taskHandler.UpdateTaskStatus)
 		}
 	}
 
