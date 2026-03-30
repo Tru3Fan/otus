@@ -170,6 +170,18 @@ func (r *TaskRepo) DeleteTask(id int) error {
 	return repository.ErrNotFound
 }
 
+func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
+	muTasks.Lock()
+	defer muTasks.Unlock()
+	var result []model.Task
+	for _, t := range tasks {
+		if t.UserID == userID {
+			result = append(result, t)
+		}
+	}
+	return result, nil
+}
+
 func nextUserID() int {
 	max := 0
 	for _, u := range users {

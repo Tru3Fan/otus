@@ -13,7 +13,7 @@ import (
 	grpcserver "otus/internal/grpc"
 	"otus/internal/handler"
 	"otus/internal/repository/csv"
-	mongoRepo "otus/internal/repository/mongo"
+	postgresRepo "otus/internal/repository/postgres"
 	"otus/internal/service"
 	"otus/pkg/pb"
 	"sync"
@@ -49,6 +49,7 @@ func main() {
 		fmt.Println("Error connecting to database", err)
 		os.Exit(1)
 	}
+	fmt.Println("all database connection established")
 	defer db.Disconnect()
 
 	if err := csv.LoadAllData(); err != nil {
@@ -71,8 +72,8 @@ func main() {
 	wg.Add(1)
 	go csv.LogNew(ctx, &wg)
 
-	userRepo := mongoRepo.NewUserRepo()
-	taskRepo := mongoRepo.NewTaskRepo()
+	userRepo := postgresRepo.NewUserRepo()
+	taskRepo := postgresRepo.NewTaskRepo()
 
 	userSvc := service.NewUserService(userRepo)
 	taskSvc := service.NewTaskService(taskRepo)
@@ -90,6 +91,7 @@ func main() {
 		api.POST("/login", handler.Login)
 		api.GET("/users", userHandler.GetUsers)
 		api.GET("/user/:id", userHandler.GetUser)
+		api.GET("/user/:id/tasks", taskHandler.GetTasksByUser)
 		api.GET("/tasks", taskHandler.GetTasks)
 		api.GET("/task/:id", taskHandler.GetTask)
 
@@ -121,8 +123,8 @@ func main() {
 	}
 
 	grpcSrv := grpc.NewServer()
-	pb.RegisterUserServiceServer(grpcSrv, &grpcserver.UserServer{})
-	pb.RegisterTaskServiceServer(grpcSrv, &grpcserver.TaskServer{})
+	pb.RegisterUserServiceServer(grpcSrv, grpcserver.NewUserServer(userRepo))
+	pb.RegisterTaskServiceServer(grpcSrv, grpcserver.NewTaskServer(taskRepo))
 
 	go func() {
 		fmt.Println("grpc server listening on :50051")

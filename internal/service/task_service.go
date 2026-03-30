@@ -12,6 +12,7 @@ type TaskService interface {
 	GetTasks() ([]model.Task, error)
 	UpdateTask(id int, title string, userID int) (model.Task, error)
 	DeleteTask(id int) error
+	GetTasksByUser(userID int) ([]model.Task, error)
 }
 
 type taskServiceImpl struct {
@@ -26,7 +27,7 @@ func (s *taskServiceImpl) CreateTask(title string, userID int) (model.Task, erro
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	t, err := s.repo.AddTask(model.Task{Title: title, UserID: userID})
+	t, err := s.repo.AddTask(model.Task{Title: title})
 	if err != nil {
 		return model.Task{}, err
 	}
@@ -41,12 +42,15 @@ func (s *taskServiceImpl) GetTask(id int) (model.Task, error) {
 func (s *taskServiceImpl) GetTasks() ([]model.Task, error) {
 	return s.repo.GetAllTasks()
 }
+func (s *taskServiceImpl) GetTasksByUser(userID int) ([]model.Task, error) {
+	return s.repo.GetTasksByUserID(userID)
+}
 
 func (s *taskServiceImpl) UpdateTask(id int, title string, userID int) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	t, err := s.repo.UpdateTask(id, model.Task{Title: title, UserID: userID})
+	t, err := s.repo.UpdateTask(id, model.Task{Title: title})
 	if err != nil {
 		return model.Task{}, err
 	}

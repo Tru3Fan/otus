@@ -17,6 +17,13 @@ type TaskServer struct {
 	repo repository.TaskRepository
 }
 
+func NewUserServer(repo repository.UserRepository) *UserServer {
+	return &UserServer{repo: repo}
+}
+func NewTaskServer(repo repository.TaskRepository) *TaskServer {
+	return &TaskServer{repo: repo}
+}
+
 func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.UserResponse, error) {
 	u, err := s.repo.AddUser(model.User{Username: req.Username})
 	if err != nil {

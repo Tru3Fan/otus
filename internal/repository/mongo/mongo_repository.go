@@ -174,6 +174,23 @@ func (r *TaskRepo) DeleteTask(id int) error {
 	return nil
 }
 
+func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cursor, err := getTaskCollection().Find(ctx, bson.M{"userid": userID})
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var tasks []model.Task
+	if err = cursor.All(ctx, &tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
 func nextUserID() int {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

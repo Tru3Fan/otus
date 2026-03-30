@@ -93,6 +93,30 @@ func (h *TaskHandler) GetTask(c *gin.Context) {
 	c.JSON(http.StatusOK, t)
 }
 
+// GetTasksByUser godoc
+// @Summary Получить задачи пользователя
+// @Tags tasks
+// @Produce json
+// @Param id path int true "ID пользователя"
+// @Success 200 {array} model.Task
+// @Failure 400 {object} map[string]string
+// @Router /api/user/{id}/tasks [get]
+func (h *TaskHandler) GetTasksByUser(c *gin.Context) {
+	id, err := parseID(c)
+	if err != nil {
+		return
+	}
+	t, err := h.svc.GetTasksByUser(id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if t == nil {
+		t = []model.Task{}
+	}
+	c.JSON(http.StatusOK, t)
+}
+
 // UpdateTask godoc
 // @Summary Обновить задачу
 // @Tags tasks

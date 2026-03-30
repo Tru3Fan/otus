@@ -34,7 +34,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler.LoginRequest"
+                            "$ref": "#/definitions/handler.LoginRequest"
                         }
                     }
                 ],
@@ -93,7 +93,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler.TaskRequest"
+                            "$ref": "#/definitions/handler.TaskRequest"
                         }
                     }
                 ],
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/otus_internal_model.Task"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -147,7 +147,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/otus_internal_model.Task"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -200,7 +200,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler.TaskRequest"
+                            "$ref": "#/definitions/handler.TaskRequest"
                         }
                     }
                 ],
@@ -208,7 +208,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/otus_internal_model.Task"
+                            "$ref": "#/definitions/model.Task"
                         }
                     },
                     "400": {
@@ -299,7 +299,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/otus_internal_model.Task"
+                                "$ref": "#/definitions/model.Task"
                             }
                         }
                     }
@@ -330,7 +330,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler.UserRequest"
+                            "$ref": "#/definitions/handler.UserRequest"
                         }
                     }
                 ],
@@ -338,7 +338,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "$ref": "#/definitions/otus_internal_model.User"
+                            "$ref": "#/definitions/model.User"
                         }
                     },
                     "400": {
@@ -384,7 +384,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/otus_internal_model.User"
+                            "$ref": "#/definitions/model.User"
                         }
                     },
                     "400": {
@@ -437,7 +437,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_handler.UserRequest"
+                            "$ref": "#/definitions/handler.UserRequest"
                         }
                     }
                 ],
@@ -445,7 +445,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/otus_internal_model.User"
+                            "$ref": "#/definitions/model.User"
                         }
                     },
                     "400": {
@@ -521,6 +521,46 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/user/{id}/tasks": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "tasks"
+                ],
+                "summary": "Получить задачи пользователя",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "ID пользователя",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/model.Task"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/users": {
             "get": {
                 "produces": [
@@ -536,7 +576,7 @@ const docTemplate = `{
                         "schema": {
                             "type": "array",
                             "items": {
-                                "$ref": "#/definitions/otus_internal_model.User"
+                                "$ref": "#/definitions/model.User"
                             }
                         }
                     }
@@ -545,7 +585,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_handler.LoginRequest": {
+        "handler.LoginRequest": {
             "type": "object",
             "required": [
                 "login",
@@ -560,7 +600,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_handler.TaskRequest": {
+        "handler.TaskRequest": {
             "type": "object",
             "required": [
                 "title"
@@ -568,10 +608,13 @@ const docTemplate = `{
             "properties": {
                 "title": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
-        "internal_handler.UserRequest": {
+        "handler.UserRequest": {
             "type": "object",
             "required": [
                 "username"
@@ -582,20 +625,32 @@ const docTemplate = `{
                 }
             }
         },
-        "otus_internal_model.Task": {
+        "model.Task": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
                 "task_id": {
                     "type": "integer"
                 },
                 "title": {
                     "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
                 }
             }
         },
-        "otus_internal_model.User": {
+        "model.User": {
             "type": "object",
             "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
                 "user_id": {
                     "type": "integer"
                 },
