@@ -7,11 +7,12 @@ import (
 )
 
 type UserService interface {
-	CreateUser(username string) (model.User, error)
+	CreateUser(u model.User) (model.User, error)
 	GetUser(id int) (model.User, error)
 	GetUsers() ([]model.User, error)
 	UpdateUser(id int, username string) (model.User, error)
 	DeleteUser(id int) error
+	GetUserByTelegramID(telegramID int64) (model.User, error)
 }
 
 type userServiceImpl struct {
@@ -22,16 +23,16 @@ func NewUserService(repo repository.UserRepository) UserService {
 	return &userServiceImpl{repo: repo}
 }
 
-func (s *userServiceImpl) CreateUser(username string) (model.User, error) {
-	if username == "" {
+func (s *userServiceImpl) CreateUser(u model.User) (model.User, error) {
+	if u.Username == "" {
 		return model.User{}, ErrEmptyUsername
 	}
-	u, err := s.repo.AddUser(model.User{Username: username})
+	created, err := s.repo.AddUser(u)
 	if err != nil {
 		return model.User{}, err
 	}
-	_ = logger.LogAction("create", "user", u.UserID)
-	return u, nil
+	_ = logger.LogAction("create", "user", created.UserID)
+	return created, nil
 }
 
 func (s *userServiceImpl) GetUser(id int) (model.User, error) {
@@ -58,4 +59,7 @@ func (s *userServiceImpl) DeleteUser(id int) error {
 	}
 	_ = logger.LogAction("delete", "user", id)
 	return nil
+}
+func (s *userServiceImpl) GetUserByTelegramID(telegramID int64) (model.User, error) {
+	return s.repo.GetUserByTelegramID(telegramID)
 }

@@ -12,7 +12,9 @@ import (
 )
 
 type UserRequest struct {
-	Username string `json:"username" binding:"required"`
+	Username         string `json:"username" binding:"required"`
+	TelegramUserID   int64  `json:"telegram_user_id"`
+	TelegramUsername string `json:"telegram_username" `
 }
 
 type UserHandler struct {
@@ -41,7 +43,11 @@ func (h *UserHandler) CreateUser(c *gin.Context) {
 		return
 	}
 
-	u, err := h.svc.CreateUser(req.Username)
+	u, err := h.svc.CreateUser(model.User{
+		Username:         req.Username,
+		TelegramUserID:   req.TelegramUserID,
+		TelegramUsername: req.TelegramUsername,
+	})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"otus/internal/bot"
 	"otus/internal/db"
 	"otus/internal/generat"
 	grpcserver "otus/internal/grpc"
@@ -81,6 +82,20 @@ func main() {
 	userHandler := handler.NewUserHandler(userSvc)
 	taskHandler := handler.NewTaskHandler(taskSvc)
 
+	telegramToken := os.Getenv("TELEGRAM_BOT_TOKEN")
+	if telegramToken != "" {
+		tgBot, err := bot.NewBot(telegramToken, taskSvc, userSvc)
+		if err != nil {
+			fmt.Println("Error creating telegram bot", err)
+		} else {
+			go func() {
+				fmt.Println("Telegram bot started")
+				if err := tgBot.Start(); err != nil {
+					fmt.Println("telegram bot error:", err)
+				}
+			}()
+		}
+	}
 	//Server 8080
 	r := gin.Default()
 
