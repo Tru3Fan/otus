@@ -11,7 +11,8 @@ import (
 )
 
 type TaskRequest struct {
-	Title string `json:"title" binding:"required"`
+	Title  string `json:"title" binding:"required"`
+	UserID int    `json:"user_id"`
 }
 type TaskHandler struct {
 	svc service.TaskService
@@ -39,7 +40,7 @@ func (h *TaskHandler) CreateTask(c *gin.Context) {
 		return
 	}
 
-	t, err := h.svc.CreateTask(req.Title)
+	t, err := h.svc.CreateTask(req.Title, req.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to add task"})
 		return
@@ -115,7 +116,7 @@ func (h *TaskHandler) UpdateTask(c *gin.Context) {
 		return
 	}
 
-	updated, err := h.svc.UpdateTask(id, req.Title)
+	updated, err := h.svc.UpdateTask(id, req.Title, req.UserID)
 	if err != nil {
 		if errors.Is(err, repository.ErrNotFound) {
 			c.JSON(http.StatusNotFound, gin.H{"error": "task not found"})

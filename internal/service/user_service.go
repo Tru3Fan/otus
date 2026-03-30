@@ -3,6 +3,7 @@ package service
 import (
 	"otus/internal/model"
 	"otus/internal/repository"
+	"otus/internal/repository/logger"
 )
 
 type UserService interface {
@@ -13,31 +14,48 @@ type UserService interface {
 	DeleteUser(id int) error
 }
 
-type userServiceImpl struct{}
-
-func NewUserService() UserService {
-	return &userServiceImpl{}
+type userServiceImpl struct {
+	repo repository.UserRepository
 }
 
-func (u *userServiceImpl) CreateUser(username string) (model.User, error) {
+func NewUserService(repo repository.UserRepository) UserService {
+	return &userServiceImpl{repo: repo}
+}
+
+func (s *userServiceImpl) CreateUser(username string) (model.User, error) {
 	if username == "" {
 		return model.User{}, ErrEmptyUsername
 	}
-	return repository.AddUser(model.User{Username: username})
+	u, err := s.repo.AddUser(model.User{Username: username})
+	if err != nil {
+		return model.User{}, err
+	}
+	_ = logger.LogAction("create", "user", u.UserID)
+	return u, nil
 }
 
-func (u *userServiceImpl) GetUser(id int) (model.User, error) {
-	return repository.GetUserByID(id)
+func (s *userServiceImpl) GetUser(id int) (model.User, error) {
+	return s.repo.GetUserByID(id)
 }
-func (u *userServiceImpl) GetUsers() ([]model.User, error) {
-	return repository.GetAllUsers()
+func (s *userServiceImpl) GetUsers() ([]model.User, error) {
+	return s.repo.GetAllUsers()
 }
-func (u *userServiceImpl) UpdateUser(id int, username string) (model.User, error) {
+func (s *userServiceImpl) UpdateUser(id int, username string) (model.User, error) {
 	if username == "" {
 		return model.User{}, ErrEmptyUsername
 	}
-	return repository.UpdateUser(id, model.User{Username: username})
+	u, err := s.repo.UpdateUser(id, model.User{Username: username})
+	if err != nil {
+		return model.User{}, err
+	}
+	_ = logger.LogAction("update", "user", id)
+	return u, nil
 }
-func (u *userServiceImpl) DeleteUser(id int) error {
-	return repository.DeleteUser(id)
+func (s *userServiceImpl) DeleteUser(id int) error {
+	err := s.repo.DeleteUser(id)
+	if err != nil {
+		return err
+	}
+	_ = logger.LogAction("delete", "user", id)
+	return nil
 }

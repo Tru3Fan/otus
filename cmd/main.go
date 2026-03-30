@@ -8,9 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"otus/internal/db"
+	"otus/internal/generat"
 	grpcserver "otus/internal/grpc"
 	"otus/internal/handler"
-	"otus/internal/repository"
+	"otus/internal/repository/csv"
+	mongoRepo "otus/internal/repository/mongo"
 	"otus/internal/service"
 	"otus/pkg/pb"
 	"sync"
@@ -42,28 +45,37 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := repository.LoadAllData(); err != nil {
+	if err := db.Connect(); err != nil {
+		fmt.Println("Error connecting to database", err)
+		os.Exit(1)
+	}
+	defer db.Disconnect()
+
+	if err := csv.LoadAllData(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 
-	ch := make(chan repository.Storable, 50)
+	ch := make(chan csv.Storable, 50)
 
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go service.GenerateAndCreate(ctx, ch, &wg)
+	go generat.GenerateAndCreate(ctx, ch, &wg)
 
 	wg.Add(1)
-	go repository.Add(ctx, ch, &wg)
+	go csv.Add(ctx, ch, &wg)
 
 	wg.Add(1)
-	go repository.LogNew(ctx, &wg)
+	go csv.LogNew(ctx, &wg)
 
-	userSvc := service.NewUserService()
-	taskSvc := service.NewTaskService()
+	userRepo := mongoRepo.NewUserRepo()
+	taskRepo := mongoRepo.NewTaskRepo()
+
+	userSvc := service.NewUserService(userRepo)
+	taskSvc := service.NewTaskService(taskRepo)
 
 	userHandler := handler.NewUserHandler(userSvc)
 	taskHandler := handler.NewTaskHandler(taskSvc)
@@ -96,9 +108,7 @@ func main() {
 
 	srv := &http.Server{Addr: ":8080", Handler: r}
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		fmt.Println("http server listening on :8080")
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			fmt.Println("http server error:", err)
@@ -108,16 +118,13 @@ func main() {
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
-		os.Exit(1)
 	}
 
 	grpcSrv := grpc.NewServer()
 	pb.RegisterUserServiceServer(grpcSrv, &grpcserver.UserServer{})
 	pb.RegisterTaskServiceServer(grpcSrv, &grpcserver.TaskServer{})
 
-	wg.Add(1)
 	go func() {
-		defer wg.Done()
 		fmt.Println("grpc server listening on :50051")
 		if err := grpcSrv.Serve(lis); err != nil {
 			fmt.Println("grpc server error:", err)

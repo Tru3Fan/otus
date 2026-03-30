@@ -9,14 +9,16 @@ import (
 
 type UserServer struct {
 	pb.UnimplementedUserServiceServer
+	repo repository.UserRepository
 }
 
 type TaskServer struct {
 	pb.UnimplementedTaskServiceServer
+	repo repository.TaskRepository
 }
 
 func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.UserResponse, error) {
-	u, err := repository.AddUser(model.User{Username: req.Username})
+	u, err := s.repo.AddUser(model.User{Username: req.Username})
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +26,7 @@ func (s *UserServer) CreateUser(ctx context.Context, req *pb.CreateUserRequest) 
 }
 
 func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.UserResponse, error) {
-	u, err := repository.GetUserByID(int(req.Id))
+	u, err := s.repo.GetUserByID(int(req.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -32,7 +34,7 @@ func (s *UserServer) GetUser(ctx context.Context, req *pb.GetUserRequest) (*pb.U
 }
 
 func (s *UserServer) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb.GetUsersResponse, error) {
-	all, err := repository.GetAllUsers()
+	all, err := s.repo.GetAllUsers()
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +46,7 @@ func (s *UserServer) GetUsers(ctx context.Context, req *pb.GetUsersRequest) (*pb
 }
 
 func (s *UserServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) (*pb.UserResponse, error) {
-	u, err := repository.UpdateUser(int(req.Id), model.User{Username: req.Username})
+	u, err := s.repo.UpdateUser(int(req.Id), model.User{Username: req.Username})
 	if err != nil {
 		return nil, err
 	}
@@ -52,21 +54,21 @@ func (s *UserServer) UpdateUser(ctx context.Context, req *pb.UpdateUserRequest) 
 }
 
 func (s *UserServer) DeleteUser(ctx context.Context, req *pb.DeleteUserRequest) (*pb.DeleteResponse, error) {
-	if err := repository.DeleteUser(int(req.Id)); err != nil {
+	if err := s.repo.DeleteUser(int(req.Id)); err != nil {
 		return nil, err
 	}
 	return &pb.DeleteResponse{Message: "user deleted"}, nil
 }
 
 func (s *TaskServer) CreateTask(ctx context.Context, req *pb.CreateTaskRequest) (*pb.TaskResponse, error) {
-	t, err := repository.AddTask(model.Task{Title: req.Title})
+	t, err := s.repo.AddTask(model.Task{Title: req.Title})
 	if err != nil {
 		return nil, err
 	}
 	return &pb.TaskResponse{Id: int32(t.TaskID), Title: t.Title}, nil
 }
 func (s *TaskServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.TaskResponse, error) {
-	t, err := repository.GetTaskByID(int(req.Id))
+	t, err := s.repo.GetTaskByID(int(req.Id))
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +76,7 @@ func (s *TaskServer) GetTask(ctx context.Context, req *pb.GetTaskRequest) (*pb.T
 }
 
 func (s *TaskServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb.GetTasksResponse, error) {
-	all, err := repository.GetAllTasks()
+	all, err := s.repo.GetAllTasks()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +88,7 @@ func (s *TaskServer) GetTasks(ctx context.Context, req *pb.GetTasksRequest) (*pb
 }
 
 func (s *TaskServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) (*pb.TaskResponse, error) {
-	t, err := repository.UpdateTask(int(req.Id), model.Task{Title: req.Title})
+	t, err := s.repo.UpdateTask(int(req.Id), model.Task{Title: req.Title})
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +96,7 @@ func (s *TaskServer) UpdateTask(ctx context.Context, req *pb.UpdateTaskRequest) 
 }
 
 func (s *TaskServer) DeleteTask(ctx context.Context, req *pb.DeleteTaskRequest) (*pb.DeleteResponse, error) {
-	if err := repository.DeleteTask(int(req.Id)); err != nil {
+	if err := s.repo.DeleteTask(int(req.Id)); err != nil {
 		return nil, err
 	}
 	return &pb.DeleteResponse{Message: "task deleted"}, nil
