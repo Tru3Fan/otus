@@ -15,6 +15,20 @@ services:
     ports:
       - "6379:6379"
 
+  app:
+    build: .
+    container_name: otus_app
+    ports:
+      - "8080:8080"
+      - "50051:50051"
+    depends_on:
+      - postgres
+      - redis
+      - mongodb
+    env_file:
+      - .env
+
+
   postgres:
     image: postgres:17
     container_name: testing

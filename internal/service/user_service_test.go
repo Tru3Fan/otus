@@ -12,10 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type MockUserRepo struct {
-	users []model.User
-}
-
 func setupUserService() service.UserService {
 	os.Setenv("DATA_DIR", "../../data")
 	csv.ResetUsers()
@@ -46,7 +42,7 @@ func TestCreateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
-			u, err := svc.CreateUser(tt.username)
+			u, err := svc.CreateUser(model.User{Username: tt.username})
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -79,7 +75,7 @@ func TestGetUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
-			svc.CreateUser("Ivan")
+			svc.CreateUser(model.User{Username: "Ivan"})
 			_, err := svc.GetUser(tt.id)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -121,7 +117,7 @@ func TestUpdateUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
-			svc.CreateUser("Ivan")
+			svc.CreateUser(model.User{Username: "Ivan"})
 
 			u, err := svc.UpdateUser(tt.id, tt.username)
 			if tt.wantErr {
@@ -152,7 +148,7 @@ func TestDeleteUser(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
-			svc.CreateUser("Ivan")
+			svc.CreateUser(model.User{Username: "Ivan"})
 
 			err := svc.DeleteUser(tt.id)
 			if tt.wantErr {
@@ -185,7 +181,7 @@ func TestGetUsers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
 			for i := 0; i < tt.seedCount; i++ {
-				svc.CreateUser("Ivan")
+				svc.CreateUser(model.User{Username: "Ivan"})
 			}
 			users, err := svc.GetUsers()
 			assert.NoError(t, err)
