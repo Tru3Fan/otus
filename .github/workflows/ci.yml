@@ -22,6 +22,10 @@ jobs:
       - name: lint
         run: go vet ./...
 
+      - name: Create data directory for tests
+        run: mkdir -p data && touch data/tasks.csv data/users.csv
+
+
       - name: Run tests
         run: go test -race -count=100 ./...
 
