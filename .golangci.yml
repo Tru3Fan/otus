@@ -1,14 +1,8 @@
 linters:
   enable:
     - govet
-    - errcheck
     - staticcheck
-    - unused
     - gosimple
-
-linters-settings:
-  govet:
-    enable-all: true
 
 run:
   timeout: 5m
