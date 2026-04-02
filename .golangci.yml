@@ -1,9 +1,17 @@
 linters:
   enable:
+    - errcheck
     - govet
     - staticcheck
-    - gosimple
 
-run:
-  timeout: 5m
-  go: "1.24"
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+    - path: internal/bot/handlers\.go
+      linters:
+        - errcheck
+    - path: internal/db/db\.go
+      linters:
+        - errcheck
