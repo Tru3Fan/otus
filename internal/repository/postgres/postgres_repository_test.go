@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    body TEXT,
     user_id INT REFERENCES users(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     assigned_by INT REFERENCES users(id) ON DELETE SET NULL,

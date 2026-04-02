@@ -5,7 +5,6 @@ import "time"
 type Task struct {
 	TaskID     int        `json:"task_id"`
 	Title      string     `json:"title"`
-	Body       string     `json:"body,omitempty"`
 	UserID     int        `json:"user_id"`
 	Status     string     `json:"status"`
 	Deadline   *time.Time `json:"deadline,omitempty"`

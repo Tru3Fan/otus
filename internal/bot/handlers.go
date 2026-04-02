@@ -43,10 +43,6 @@ func (b *Bot) handleMessage(msg *tgbotapi.Message) {
 	switch state.Step {
 	case StepWaitingTaskTitle:
 		state.Draft.Title = strings.TrimSpace(msg.Text)
-		state.Step = StepWaitingTaskBody
-		b.sendWithKeyboard(msg.Chat.ID, "Описание задачи (или пропустить):", b.skipKeyboard())
-	case StepWaitingTaskBody:
-		state.Draft.Body = strings.TrimSpace(msg.Text)
 		state.Step = StepWaitingAssignee
 		b.sendAssigneeChoice(msg.Chat.ID, msg.From.ID)
 	default:
@@ -71,7 +67,7 @@ func (b *Bot) handleStart(msg *tgbotapi.Message) {
 		b.send(msg.Chat.ID, "Ошибка регистрации: "+err.Error())
 		return
 	}
-	b.send(msg.Chat.ID, "Добро пожаловать, @"+msg.From.FirstName+"!")
+	b.send(msg.Chat.ID, "Добро пожаловать, "+msg.From.FirstName+"!")
 	b.sendMainMenu(msg.Chat.ID)
 }
 func (b *Bot) handleAddUser(msg *tgbotapi.Message) {
@@ -107,19 +103,12 @@ func (b *Bot) handleCallback(cb *tgbotapi.CallbackQuery) {
 				tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "cancel_create"),
 			),
 		))
-	case "my_tasks":
-		b.showMyTasks(chatID, userID)
 	case "assigned_by_me":
 		b.showAssignedByMe(chatID, userID)
 	case "assigned_to_me":
 		b.showAssignedToMe(chatID, userID)
 	case "archive":
 		b.showArchive(chatID, userID)
-	case "skip_body":
-		state := b.getState(userID)
-		state.Draft.Body = ""
-		state.Step = StepWaitingAssignee
-		b.sendAssigneeChoice(chatID, userID)
 	case "cancel_create":
 		b.resetState(userID)
 		b.sendMainMenu(chatID)
@@ -131,7 +120,7 @@ func (b *Bot) handleCallback(cb *tgbotapi.CallbackQuery) {
 			b.handleDeadlineChoice(chatID, userID, cb.Data)
 		case strings.HasPrefix(cb.Data, "task_"):
 			id, _ := strconv.Atoi(strings.TrimPrefix(cb.Data, "task_"))
-			b.showTaskDetail(chatID, id)
+			b.showTaskDetail(chatID, id, userID)
 		case strings.HasPrefix(cb.Data, "close_task_"):
 			id, _ := strconv.Atoi(strings.TrimPrefix(cb.Data, "close_task_"))
 			b.handleCloseTask(chatID, userID, id)
@@ -143,39 +132,6 @@ func (b *Bot) handleCallback(cb *tgbotapi.CallbackQuery) {
 			b.handleCancelTask(chatID, userID, id)
 		}
 	}
-}
-
-func (b *Bot) showMyTasks(chatID int64, telegramID int64) {
-	user, err := b.userService.GetUserByTelegramID(telegramID)
-	if err != nil {
-		b.send(chatID, "Пользователь не найден.")
-		return
-	}
-	task, err := b.taskService.GetTasksByUser(user.UserID)
-	if err != nil || len(task) == 0 {
-		b.send(chatID, "Задач нет.")
-		return
-	}
-	var rows [][]tgbotapi.InlineKeyboardButton
-	for _, t := range task {
-
-		if t.Status == "done" || t.Status == "cancelled" {
-			continue
-		}
-
-		label := fmt.Sprintf("%s [%s]", t.Title, statusText(t.Status))
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("task_%d", t.TaskID)),
-		))
-	}
-	if len(rows) == 0 {
-		b.send(chatID, "Активных задач нет.")
-		return
-	}
-	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-		tgbotapi.NewInlineKeyboardButtonData("« Меню", "menu"),
-	))
-	b.sendWithKeyboard(chatID, "Ваши задачи:", tgbotapi.NewInlineKeyboardMarkup(rows...))
 }
 
 func (b *Bot) showAssignedByMe(chatID int64, telegramID int64) {
@@ -191,10 +147,16 @@ func (b *Bot) showAssignedByMe(chatID int64, telegramID int64) {
 	}
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, t := range task {
-		label := fmt.Sprintf("%s [%s]", t.Title, statusText(t.Status))
-		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("task_%d", t.TaskID)),
-		))
+		if t.Status != "done" && t.Status != "cancelled" {
+			label := fmt.Sprintf("%s [%s]", t.Title, statusText(t.Status))
+			rows = append(rows, tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("task_%d", t.TaskID)),
+			))
+		}
+	}
+	if len(rows) == 0 {
+		b.send(chatID, "Задач нет.")
+		return
 	}
 	rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 		tgbotapi.NewInlineKeyboardButtonData("« Меню", "menu"),
@@ -216,7 +178,7 @@ func (b *Bot) showAssignedToMe(chatID int64, telegramID int64) {
 
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, t := range all {
-		if t.AssignedBy != 0 && t.AssignedBy != user.UserID {
+		if t.AssignedBy != 0 && t.AssignedBy != user.UserID && t.Status != "done" && t.Status != "cancelled" {
 			label := fmt.Sprintf("%s [%s]", t.Title, statusText(t.Status))
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("task_%d", t.TaskID)),
@@ -239,14 +201,21 @@ func (b *Bot) showArchive(chatID int64, telegramID int64) {
 		b.send(chatID, "Пользователь не найден.")
 		return
 	}
-	all, err := b.taskService.GetTasksByUser(user.UserID)
+	asAssignee, err := b.taskService.GetTasksByUser(user.UserID)
 	if err != nil {
 		b.send(chatID, "Ошибка получения задач.")
 		return
 	}
+	asAuthor, err := b.taskService.GetTasksByAuthor(user.UserID)
+	if err != nil {
+		b.send(chatID, "Ошибка получения задач.")
+		return
+	}
+	seen := make(map[int]bool)
 	var rows [][]tgbotapi.InlineKeyboardButton
-	for _, t := range all {
-		if t.Status == "done" || t.Status == "cancelled" {
+	for _, t := range append(asAssignee, asAuthor...) {
+		if (t.Status == "done" || t.Status == "cancelled") && !seen[t.TaskID] {
+			seen[t.TaskID] = true
 			label := fmt.Sprintf("%s [%s]", t.Title, statusText(t.Status))
 			rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(label, fmt.Sprintf("task_%d", t.TaskID)),
@@ -263,7 +232,7 @@ func (b *Bot) showArchive(chatID int64, telegramID int64) {
 	b.sendWithKeyboard(chatID, "Архив задач:", tgbotapi.NewInlineKeyboardMarkup(rows...))
 }
 
-func (b *Bot) showTaskDetail(chatID int64, taskID int) {
+func (b *Bot) showTaskDetail(chatID int64, taskID int, telegramID int64) {
 	t, err := b.taskService.GetTask(taskID)
 	if err != nil {
 		b.send(chatID, "Задача не найдена.")
@@ -273,17 +242,43 @@ func (b *Bot) showTaskDetail(chatID int64, taskID int) {
 	if t.Deadline != nil {
 		deadline = t.Deadline.Format("02.01.2006")
 	}
-	text := fmt.Sprintf("📌%s\nСтатус: %s\nДедлайн: %s\n%s", t.Title, statusText(t.Status), deadline, t.Body)
-	keyboard := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("▶️ В работу", fmt.Sprintf("inprogress_task_%d", t.TaskID)),
+	text := fmt.Sprintf("📌%s\nСтатус: %s\nДедлайн: %s", t.Title, statusText(t.Status), deadline)
+
+	var keyboard tgbotapi.InlineKeyboardMarkup
+	if t.Status == "done" || t.Status == "cancelled" {
+		b.sendWithKeyboard(chatID, text, tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("« Назад", "menu"),
+			),
+		))
+		return
+	}
+	author, _ := b.userService.GetUserByTelegramID(telegramID)
+	if t.AssignedBy != 0 && author.UserID == t.AssignedBy {
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", fmt.Sprintf("cancel_task_%d", t.TaskID)),
+			),
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("« Назад", "menu"),
+			),
+		)
+	} else {
+		var row []tgbotapi.InlineKeyboardButton
+		if t.Status == "pending" {
+			row = append(row, tgbotapi.NewInlineKeyboardButtonData("▶️ В работу", fmt.Sprintf("inprogress_task_%d", t.TaskID)))
+		}
+		row = append(row,
 			tgbotapi.NewInlineKeyboardButtonData("✅ Закрыть", fmt.Sprintf("close_task_%d", t.TaskID)),
 			tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", fmt.Sprintf("cancel_task_%d", t.TaskID)),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("« Назад", "menu"),
-		),
-	)
+		)
+		keyboard = tgbotapi.NewInlineKeyboardMarkup(
+			row,
+			tgbotapi.NewInlineKeyboardRow(
+				tgbotapi.NewInlineKeyboardButtonData("« Назад", "menu"),
+			),
+		)
+	}
 	b.sendWithKeyboard(chatID, text, keyboard)
 }
 
@@ -293,8 +288,16 @@ func (b *Bot) sendAssigneeChoice(chatID int64, telegramID int64) {
 		b.send(chatID, "Ошибка получения пользователей.")
 		return
 	}
+	author, err := b.userService.GetUserByTelegramID(telegramID)
+	if err != nil {
+		b.send(chatID, "Ошибка")
+		return
+	}
 	var rows [][]tgbotapi.InlineKeyboardButton
 	for _, u := range users {
+		if u.UserID == author.UserID {
+			continue
+		}
 		rows = append(rows, tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData("@"+u.Username, fmt.Sprintf("assignee_%d", u.UserID)),
 		))
@@ -364,13 +367,13 @@ func (b *Bot) handleDeadlineChoice(chatID int64, telegramID int64, data string) 
 		b.send(chatID, "Ошибка: пользователь не найден")
 		return
 	}
-	t, err := b.taskService.CreateTaskFull(state.Draft.Title, state.Draft.Body, state.Draft.AssigneeID, author.UserID, deadline)
+	t, err := b.taskService.CreateTaskFull(state.Draft.Title, state.Draft.AssigneeID, author.UserID, deadline)
 	if err != nil {
 		b.send(chatID, "Ошибка создания задачи: "+err.Error())
 		return
 	}
 	b.send(chatID, "Задача создана!")
-	b.notifyAssignee(state.Draft.AssigneeID, t.TaskID, t.Title)
+	b.notifyAssignee(state.Draft.AssigneeID, t.Title)
 	b.sendMainMenu(chatID)
 	b.resetState(telegramID)
 }
@@ -382,7 +385,7 @@ func (b *Bot) handleCloseTask(chatID int64, telegramID int64, taskID int) {
 		return
 	}
 	b.send(chatID, "Задача закрыта.")
-	b.notifyAuthor(t.AssignedBy, t.TaskID, t.Title)
+	b.notifyAuthor(t.AssignedBy, t.Title, "Задача выполнена")
 	b.sendMainMenu(chatID)
 }
 
@@ -397,25 +400,34 @@ func (b *Bot) handleCancelTask(chatID int64, telegramID int64, taskID int) {
 }
 
 func (b *Bot) handleInProgressTask(chatID int64, telegramID int64, taskID int) {
-	_, err := b.taskService.UpdateTaskStatus(taskID, "in_progress")
+	t, err := b.taskService.UpdateTaskStatus(taskID, "in_progress")
 	if err != nil {
 		b.send(chatID, "Ошибка: "+err.Error())
 		return
 	}
 	b.send(chatID, "Задача  взята в работу.")
+	b.notifyAuthor(t.AssignedBy, t.Title, "Задача взята в работу")
 	b.sendMainMenu(chatID)
 }
 
-func (b *Bot) notifyAssignee(assigneeID int, taskID int, title string) {
+func (b *Bot) notifyAssignee(assigneeID int, title string) {
+	user, err := b.userService.GetUser(assigneeID)
+	if err != nil || user.TelegramUserID == 0 {
+		return
+	}
+	b.send(user.TelegramUserID, fmt.Sprintf("Вам назначена задача: %s", title))
 }
-func (b *Bot) notifyAuthor(authorID int, taskID int, title string) {
-
+func (b *Bot) notifyAuthor(authorID int, title string, msg string) {
+	user, err := b.userService.GetUser(authorID)
+	if err != nil || user.TelegramUserID == 0 {
+		return
+	}
+	b.send(user.TelegramUserID, fmt.Sprintf("%s: %s", msg, title))
 }
 
 func (b *Bot) sendMainMenu(chatID int64) {
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📋 Мои задачи", "my_tasks"),
 			tgbotapi.NewInlineKeyboardButtonData("✏️ Новая задача", "new_task"),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -433,14 +445,6 @@ func (b *Bot) sendWithKeyboard(chatID int64, text string, keyboard tgbotapi.Inli
 	msg := tgbotapi.NewMessage(chatID, text)
 	msg.ReplyMarkup = keyboard
 	b.api.Send(msg)
-}
-func (b *Bot) skipKeyboard() tgbotapi.InlineKeyboardMarkup {
-	return tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("Пропустить", "skip_body"),
-			tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "cancel_create"),
-		),
-	)
 }
 
 func (b *Bot) isRegistered(telegramID int64) bool {

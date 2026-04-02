@@ -7,14 +7,12 @@ type Step int
 const (
 	StepNone Step = iota
 	StepWaitingTaskTitle
-	StepWaitingTaskBody
 	StepWaitingAssignee
 	StepWaitingDeadline
 )
 
 type DraftTask struct {
 	Title      string
-	Body       string
 	AssigneeID int
 	Deadline   *time.Time
 }

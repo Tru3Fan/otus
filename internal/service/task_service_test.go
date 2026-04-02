@@ -100,7 +100,7 @@ func TestCloseTask(t *testing.T) {
 func TestCreateTaskFull(t *testing.T) {
 	svc := setupTaskService()
 	d := time.Now().AddDate(0, 0, 3)
-	task, err := svc.CreateTaskFull("Fix bug", "описание", 2, 1, &d)
+	task, err := svc.CreateTaskFull("Fix bug", 2, 1, &d)
 	assert.NoError(t, err)
 	assert.Equal(t, "Fix bug", task.Title)
 	assert.Equal(t, "pending", task.Status)

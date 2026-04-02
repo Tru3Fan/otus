@@ -17,7 +17,7 @@ type TaskService interface {
 	GetTasksByStatus(status string) ([]model.Task, error)
 	UpdateTaskStatus(id int, status string) (model.Task, error)
 
-	CreateTaskFull(title, body string, assigneeID, authorID int, deadline *time.Time) (model.Task, error)
+	CreateTaskFull(title string, assigneeID, authorID int, deadline *time.Time) (model.Task, error)
 	GetTasksByAuthor(authorID int) ([]model.Task, error)
 	CloseTask(id int) (model.Task, error)
 }
@@ -89,13 +89,12 @@ func (s *taskServiceImpl) UpdateTaskStatus(id int, status string) (model.Task, e
 	return s.repo.UpdateTask(id, t)
 }
 
-func (s *taskServiceImpl) CreateTaskFull(title, body string, assigneeID, authorID int, deadline *time.Time) (model.Task, error) {
+func (s *taskServiceImpl) CreateTaskFull(title string, assigneeID, authorID int, deadline *time.Time) (model.Task, error) {
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
 	return s.repo.AddTask(model.Task{
 		Title:      title,
-		Body:       body,
 		UserID:     assigneeID,
 		AssignedBy: authorID,
 		Status:     "pending",
