@@ -3,21 +3,15 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/signal"
 	"otus/internal/bot"
 	"otus/internal/db"
-	"otus/internal/generat"
-	grpcserver "otus/internal/grpc"
 	"otus/internal/handler"
-	"otus/internal/repository/csv"
 	postgresRepo "otus/internal/repository/postgres"
 	"otus/internal/service"
-	"otus/pkg/pb"
-	"sync"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -27,7 +21,6 @@ import (
 	"github.com/joho/godotenv"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
-	"google.golang.org/grpc"
 )
 
 // @title           Otus API
@@ -53,26 +46,6 @@ func main() {
 	fmt.Println("all database connection established")
 	defer db.Disconnect()
 
-	if err := csv.LoadAllData(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	ctx, cancel := context.WithCancel(context.Background())
-
-	ch := make(chan csv.Storable, 50)
-
-	var wg sync.WaitGroup
-
-	wg.Add(1)
-	go generat.GenerateAndCreate(ctx, ch, &wg)
-
-	wg.Add(1)
-	go csv.Add(ctx, ch, &wg)
-
-	wg.Add(1)
-	go csv.LogNew(ctx, &wg)
-
 	userRepo := postgresRepo.NewUserRepo()
 	taskRepo := postgresRepo.NewTaskRepo()
 
@@ -84,7 +57,8 @@ func main() {
 
 	telegramToken := os.Getenv("TELEGRAM_BOT_TOKEN")
 	if telegramToken != "" {
-		tgBot, err := bot.NewBot(telegramToken, taskSvc, userSvc)
+		adminID, _ := strconv.ParseInt(os.Getenv("ADMIN_TELEGRAM_ID"), 10, 64)
+		tgBot, err := bot.NewBot(telegramToken, taskSvc, userSvc, adminID)
 		if err != nil {
 			fmt.Println("Error creating telegram bot", err)
 		} else {
@@ -133,23 +107,6 @@ func main() {
 			fmt.Println("http server error:", err)
 		}
 	}()
-
-	lis, err := net.Listen("tcp", ":50051")
-	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
-	}
-
-	grpcSrv := grpc.NewServer()
-	pb.RegisterUserServiceServer(grpcSrv, grpcserver.NewUserServer(userRepo))
-	pb.RegisterTaskServiceServer(grpcSrv, grpcserver.NewTaskServer(taskRepo))
-
-	go func() {
-		fmt.Println("grpc server listening on :50051")
-		if err := grpcSrv.Serve(lis); err != nil {
-			fmt.Println("grpc server error:", err)
-		}
-	}()
-
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
@@ -159,10 +116,4 @@ func main() {
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()
 	_ = srv.Shutdown(shutdownCtx)
-	grpcSrv.GracefulStop()
-
-	cancel()
-	wg.Wait()
-
-	fmt.Println("Горутины завершины")
 }

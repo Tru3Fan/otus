@@ -4,6 +4,7 @@ import (
 	"otus/internal/model"
 	"otus/internal/repository"
 	"otus/internal/repository/logger"
+	"time"
 )
 
 type TaskService interface {
@@ -15,6 +16,10 @@ type TaskService interface {
 	GetTasksByUser(userID int) ([]model.Task, error)
 	GetTasksByStatus(status string) ([]model.Task, error)
 	UpdateTaskStatus(id int, status string) (model.Task, error)
+
+	CreateTaskFull(title, body string, assigneeID, authorID int, deadline *time.Time) (model.Task, error)
+	GetTasksByAuthor(authorID int) ([]model.Task, error)
+	CloseTask(id int) (model.Task, error)
 }
 
 type taskServiceImpl struct {
@@ -73,7 +78,7 @@ func (s *taskServiceImpl) GetTasksByStatus(status string) ([]model.Task, error) 
 }
 
 func (s *taskServiceImpl) UpdateTaskStatus(id int, status string) (model.Task, error) {
-	if status != "pending" && status != "in_progress" && status != "done" {
+	if status != "pending" && status != "in_progress" && status != "done" && status != "cancelled" {
 		return model.Task{}, ErrInvalidStatus
 	}
 	t, err := s.repo.GetTaskByID(id)
@@ -82,4 +87,27 @@ func (s *taskServiceImpl) UpdateTaskStatus(id int, status string) (model.Task, e
 	}
 	t.Status = status
 	return s.repo.UpdateTask(id, t)
+}
+
+func (s *taskServiceImpl) CreateTaskFull(title, body string, assigneeID, authorID int, deadline *time.Time) (model.Task, error) {
+	if title == "" {
+		return model.Task{}, ErrEmptyTitle
+	}
+	return s.repo.AddTask(model.Task{
+		Title:      title,
+		Body:       body,
+		UserID:     assigneeID,
+		AssignedBy: authorID,
+		Status:     "pending",
+		Deadline:   deadline,
+	})
+
+}
+
+func (s *taskServiceImpl) GetTasksByAuthor(authorID int) ([]model.Task, error) {
+	return s.repo.GetTasksByAuthorID(authorID)
+}
+
+func (s *taskServiceImpl) CloseTask(id int) (model.Task, error) {
+	return s.UpdateTaskStatus(id, "done")
 }

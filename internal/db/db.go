@@ -24,9 +24,6 @@ var (
 )
 
 func Connect() error {
-	if err := connectMongo(); err != nil {
-		return err
-	}
 	if err := connectRedis(); err != nil {
 		return err
 	}

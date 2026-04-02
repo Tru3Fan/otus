@@ -13,6 +13,11 @@ type UserService interface {
 	UpdateUser(id int, username string) (model.User, error)
 	DeleteUser(id int) error
 	GetUserByTelegramID(telegramID int64) (model.User, error)
+
+	RegisterFromTelegram(telegramID int64, username string) (model.User, error)
+	AddPendingUser(username string) error
+	IsPendingUser(username string) (bool, error)
+	ConfirmPendingUser(telegramID int64, username string) (model.User, error)
 }
 
 type userServiceImpl struct {
@@ -62,4 +67,21 @@ func (s *userServiceImpl) DeleteUser(id int) error {
 }
 func (s *userServiceImpl) GetUserByTelegramID(telegramID int64) (model.User, error) {
 	return s.repo.GetUserByTelegramID(telegramID)
+}
+func (s *userServiceImpl) RegisterFromTelegram(telegramID int64, username string) (model.User, error) {
+	return s.repo.AddUser(model.User{Username: username, TelegramUserID: telegramID, TelegramUsername: username})
+}
+func (s *userServiceImpl) AddPendingUser(username string) error {
+	return s.repo.AddPendingUser(username)
+}
+func (s *userServiceImpl) IsPendingUser(username string) (bool, error) {
+	return s.repo.IsPendingUser(username)
+}
+func (s *userServiceImpl) ConfirmPendingUser(telegramID int64, username string) (model.User, error) {
+	u, err := s.RegisterFromTelegram(telegramID, username)
+	if err != nil {
+		return model.User{}, err
+	}
+	_ = s.repo.DeletePendingUser(username)
+	return u, nil
 }

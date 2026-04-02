@@ -14,6 +14,11 @@ type UserRepository interface {
 	UpdateUser(id int, u model.User) (model.User, error)
 	DeleteUser(id int) error
 	GetUserByTelegramID(telegramID int64) (model.User, error)
+
+	AddPendingUser(username string) error
+	IsPendingUser(username string) (bool, error)
+	DeletePendingUser(username string) error
+	GetUserByTelegramUsername(username string) (model.User, error)
 }
 
 type TaskRepository interface {
@@ -24,4 +29,6 @@ type TaskRepository interface {
 	DeleteTask(id int) error
 	GetTasksByUserID(userID int) ([]model.Task, error)
 	GetTasksByStatus(status string) ([]model.Task, error)
+
+	GetTasksByAuthorID(authorID int) ([]model.Task, error)
 }
