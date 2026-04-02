@@ -34,7 +34,7 @@ import (
 
 func main() {
 
-	godotenv.Load()
+	_ = godotenv.Load()
 
 	if err := db.Connect(); err != nil {
 		fmt.Println("Error connecting to database", err)
