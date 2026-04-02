@@ -188,14 +188,18 @@ func (r *UserRepo) GetUserByTelegramUsername(username string) (model.User, error
 }
 
 func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
-	query := `INSERT INTO tasks (title, body, user_id, status, assigned_by) VALUES ($1, NULLIF($2, ''), NULLIF($3,0), $4, NULLIF($5, 0)) RETURNING id, title, body, user_id, status, assigned_by`
-	row := db.PostgresDB.QueryRow(query, t.Title, t.Body, t.UserID, t.Status, t.AssignedBy)
+	query := `INSERT INTO tasks (title, body, user_id, status, assigned_by, deadline)
+	VALUES ($1, NULLIF($2, ''), NULLIF($3,0), $4, NULLIF($5, 0), $6) 
+	RETURNING id, title, body, user_id, status, assigned_by, deadline`
+
+	row := db.PostgresDB.QueryRow(query, t.Title, t.Body, t.UserID, t.Status, t.AssignedBy, t.Deadline)
 
 	var created model.Task
 	var userID sql.NullInt64
 	var assignedBy sql.NullInt64
 	var body sql.NullString
-	err := row.Scan(&created.TaskID, &created.Title, &body, &userID, &created.Status, &assignedBy)
+	var deadline sql.NullTime
+	err := row.Scan(&created.TaskID, &created.Title, &body, &userID, &created.Status, &assignedBy, &deadline)
 	if err != nil {
 		return model.Task{}, err
 	}
@@ -207,6 +211,9 @@ func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 	}
 	if assignedBy.Valid {
 		created.AssignedBy = int(assignedBy.Int64)
+	}
+	if deadline.Valid {
+		created.Deadline = &deadline.Time
 	}
 	return created, nil
 }

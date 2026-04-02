@@ -37,15 +37,18 @@ jobs:
         with:
           go-version: '1.25'
 
-      - name: lint
-        run: go vet ./...
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
 
-      - name: Create data directory for tests
-        run: mkdir -p data && touch data/tasks.csv data/users.csv
+      - name: Run unit tests
+        run: go test -race -count=100 ./internal/service/...
 
-
-      - name: Run tests
-        run: go test -race -count=100 ./...
+      - name: Run integration test
+        run: go test -race -v ./internal/repository/postgres/...
+        env:
+          POSTGRES_DSN: postgres://test:test@localhost:5432/testdb?sslmode=disable
 
       - name: Build
         run: go build -o server ./cmd/main.go

@@ -33,16 +33,17 @@ func setupTestDB(t *testing.T) {
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL,
-    email TEXT NOT NULL,
     telegram_user_id BIGINT,
     telegram_username TEXT
 );
 CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    user_id INT REFERENCES users(id),
+    body TEXT,
+    user_id INT REFERENCES users(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending',
-    assigned_by INT
+    assigned_by INT REFERENCES users(id) ON DELETE SET NULL,
+    deadline TIMESTAMP
     );
 `)
 	require.NoError(t, err)

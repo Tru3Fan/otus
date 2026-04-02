@@ -2,10 +2,8 @@ package service_test
 
 import (
 	"errors"
-	"os"
 	"otus/internal/model"
 	"otus/internal/repository"
-	"otus/internal/repository/csv"
 	"otus/internal/service"
 	"testing"
 
@@ -13,10 +11,7 @@ import (
 )
 
 func setupUserService() service.UserService {
-	os.Setenv("DATA_DIR", "../../data")
-	csv.ResetUsers()
-	repo := csv.NewUserRepo()
-	return service.NewUserService(repo)
+	return service.NewUserService(newMockUserRepo())
 }
 
 func TestCreateUser(t *testing.T) {
@@ -24,21 +19,10 @@ func TestCreateUser(t *testing.T) {
 		name     string
 		username string
 		wantErr  bool
-		wantUser model.User
 	}{
-		{
-			name:     "valid user",
-			username: "Ivan",
-			wantErr:  false,
-			wantUser: model.User{Username: "Ivan"},
-		},
-		{
-			name:     "empty username",
-			username: "",
-			wantErr:  true,
-		},
+		{"valid user", "Ivan", false},
+		{"empty username", "", true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
@@ -47,7 +31,7 @@ func TestCreateUser(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.wantUser.Username, u.Username)
+				assert.Equal(t, tt.username, u.Username)
 				assert.NotZero(t, u.UserID)
 			}
 		})
@@ -60,18 +44,9 @@ func TestGetUser(t *testing.T) {
 		id      int
 		wantErr bool
 	}{
-		{
-			name:    "existing user",
-			id:      1,
-			wantErr: false,
-		},
-		{
-			name:    "non existing user",
-			id:      999,
-			wantErr: true,
-		},
+		{"existing user", 1, false},
+		{"non existing user", 999, true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
@@ -94,31 +69,14 @@ func TestUpdateUser(t *testing.T) {
 		username string
 		wantErr  bool
 	}{
-		{
-			name:     "valid update",
-			id:       1,
-			username: "Petr",
-			wantErr:  false,
-		},
-		{
-			name:     "empty username",
-			id:       1,
-			username: "",
-			wantErr:  true,
-		},
-		{
-			name:     "non existing user",
-			id:       999,
-			username: "",
-			wantErr:  true,
-		},
+		{"valid update", 1, "Petr", false},
+		{"empty username", 1, "", true},
+		{"non existing user", 999, "Petr", true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
 			svc.CreateUser(model.User{Username: "Ivan"})
-
 			u, err := svc.UpdateUser(tt.id, tt.username)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -135,21 +93,14 @@ func TestDeleteUser(t *testing.T) {
 		name    string
 		id      int
 		wantErr bool
-	}{{
-		name:    "existing user",
-		id:      1,
-		wantErr: false,
-	}, {
-		name:    "non existing user",
-		id:      999,
-		wantErr: true,
-	},
+	}{
+		{"existing user", 1, false},
+		{"non existing user", 999, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupUserService()
 			svc.CreateUser(model.User{Username: "Ivan"})
-
 			err := svc.DeleteUser(tt.id)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -160,32 +111,21 @@ func TestDeleteUser(t *testing.T) {
 	}
 }
 
-func TestGetUsers(t *testing.T) {
-	tests := []struct {
-		name      string
-		seedCount int
-		wantCount int
-	}{
-		{
-			name:      "empty list",
-			seedCount: 0,
-			wantCount: 0,
-		},
-		{
-			name:      "multiple users",
-			seedCount: 3,
-			wantCount: 3,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			svc := setupUserService()
-			for i := 0; i < tt.seedCount; i++ {
-				svc.CreateUser(model.User{Username: "Ivan"})
-			}
-			users, err := svc.GetUsers()
-			assert.NoError(t, err)
-			assert.Len(t, users, tt.seedCount)
-		})
-	}
+func TestAddAndConfirmPendingUser(t *testing.T) {
+	svc := setupUserService()
+	err := svc.AddPendingUser("testuser")
+	assert.NoError(t, err)
+
+	ok, err := svc.IsPendingUser("testuser")
+	assert.NoError(t, err)
+	assert.True(t, ok)
+
+	u, err := svc.ConfirmPendingUser(123456, "testuser")
+	assert.NoError(t, err)
+	assert.Equal(t, "testuser", u.Username)
+	assert.Equal(t, int64(123456), u.TelegramUserID)
+
+	ok, err = svc.IsPendingUser("testuser")
+	assert.NoError(t, err)
+	assert.False(t, ok)
 }
