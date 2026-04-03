@@ -34,7 +34,8 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username TEXT NOT NULL,
     telegram_user_id BIGINT,
-    telegram_username TEXT
+    telegram_username TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
 );
 CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
@@ -42,7 +43,8 @@ CREATE TABLE IF NOT EXISTS tasks (
     user_id INT REFERENCES users(id) ON DELETE SET NULL,
     status TEXT NOT NULL DEFAULT 'pending',
     assigned_by INT REFERENCES users(id) ON DELETE SET NULL,
-    deadline TIMESTAMP
+    deadline TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
     );
 `)
 	require.NoError(t, err)
