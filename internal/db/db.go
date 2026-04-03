@@ -14,7 +14,6 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var (
@@ -24,30 +23,12 @@ var (
 )
 
 func Connect() error {
-	if err := connectMongo(); err != nil {
-		return err
-	}
 	if err := connectRedis(); err != nil {
 		return err
 	}
 	if err := contextPostgres(); err != nil {
 		return err
 	}
-	return nil
-}
-
-func connectMongo() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(os.Getenv("MONGO_URI")))
-	if err != nil {
-		return err
-	}
-	if err := client.Ping(ctx, nil); err != nil {
-		return err
-	}
-	MongoDB = client.Database("otus")
 	return nil
 }
 
@@ -76,7 +57,7 @@ func contextPostgres() error {
 	}
 
 	PostgresDB = db
-	fmt.Println("connected to PostgresSQL")
+	fmt.Println("connected to PostgreSQL")
 
 	if err := runMigrations(db); err != nil {
 		return err

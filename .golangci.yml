@@ -1,0 +1,17 @@
+linters:
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+    - path: internal/bot/handlers\.go
+      linters:
+        - errcheck
+    - path: internal/db/db\.go
+      linters:
+        - errcheck

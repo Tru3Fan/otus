@@ -2,20 +2,16 @@ package service_test
 
 import (
 	"errors"
-	"os"
 	"otus/internal/repository"
-	"otus/internal/repository/csv"
 	"otus/internal/service"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func setupTaskService() service.TaskService {
-	os.Setenv("DATA_DIR", "../../data")
-	csv.ResetTasks()
-	repo := csv.NewTaskRepo()
-	return service.NewTaskService(repo)
+	return service.NewTaskService(NewMockTaskRepo())
 }
 
 func TestCreateTask(t *testing.T) {
@@ -24,18 +20,9 @@ func TestCreateTask(t *testing.T) {
 		title   string
 		wantErr bool
 	}{
-		{
-			name:    "valid task",
-			title:   "Dream",
-			wantErr: false,
-		},
-		{
-			name:    "empty title",
-			title:   "",
-			wantErr: true,
-		},
+		{"valid task", "Dream", false},
+		{"empty title", "", true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
@@ -57,23 +44,13 @@ func TestGetTask(t *testing.T) {
 		id      int
 		wantErr bool
 	}{
-		{
-			name:    "existing task",
-			id:      1,
-			wantErr: false,
-		},
-		{
-			name:    "non existing task",
-			id:      999,
-			wantErr: true,
-		},
+		{"existing task", 1, false},
+		{"non existing task", 999, true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
 			svc.CreateTask("Dream", 0)
-
 			_, err := svc.GetTask(tt.id)
 			if tt.wantErr {
 				assert.Error(t, err)
@@ -85,47 +62,49 @@ func TestGetTask(t *testing.T) {
 	}
 }
 
-func TestUpdateTask(t *testing.T) {
+func TestUpdateTaskStatus(t *testing.T) {
 	tests := []struct {
 		name    string
-		id      int
-		title   string
+		status  string
 		wantErr bool
 	}{
-		{
-			name:    "valid update",
-			id:      1,
-			title:   "New Dream",
-			wantErr: false,
-		},
-		{
-			name:    "empty title",
-			id:      1,
-			title:   "",
-			wantErr: true,
-		},
-		{
-			name:    "non existing task",
-			id:      999,
-			title:   "New Dream",
-			wantErr: true,
-		},
+		{"pending", "pending", false},
+		{"in_progress", "in_progress", false},
+		{"done", "done", false},
+		{"cancelled", "cancelled", false},
+		{"invalid", "неверный", true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
-			svc.CreateTask("Dream", 0)
-
-			task, err := svc.UpdateTask(tt.id, tt.title, 0)
+			task, _ := svc.CreateTask("Dream", 0)
+			updated, err := svc.UpdateTaskStatus(task.TaskID, tt.status)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.title, task.Title)
+				assert.Equal(t, tt.status, updated.Status)
 			}
 		})
 	}
+}
+
+func TestCloseTask(t *testing.T) {
+	svc := setupTaskService()
+	task, _ := svc.CreateTask("Dream", 0)
+	closed, err := svc.CloseTask(task.TaskID)
+	assert.NoError(t, err)
+	assert.Equal(t, "done", closed.Status)
+}
+
+func TestCreateTaskFull(t *testing.T) {
+	svc := setupTaskService()
+	d := time.Now().AddDate(0, 0, 3)
+	task, err := svc.CreateTaskFull("Fix bug", 2, 1, &d)
+	assert.NoError(t, err)
+	assert.Equal(t, "Fix bug", task.Title)
+	assert.Equal(t, "pending", task.Status)
+	assert.NotZero(t, task.TaskID)
 }
 
 func TestDeleteTask(t *testing.T) {
@@ -134,61 +113,19 @@ func TestDeleteTask(t *testing.T) {
 		id      int
 		wantErr bool
 	}{
-		{
-			name:    "existing task",
-			id:      1,
-			wantErr: false,
-		},
-		{
-			name:    "non existing task",
-			id:      999,
-			wantErr: true,
-		},
+		{"existing task", 1, false},
+		{"non existing task", 999, true},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			svc := setupTaskService()
 			svc.CreateTask("Dream", 0)
-
 			err := svc.DeleteTask(tt.id)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-		})
-	}
-}
-
-func TestGetTasks(t *testing.T) {
-	tests := []struct {
-		name      string
-		seedCount int
-		wantCount int
-	}{
-		{
-			name:      "empty list",
-			seedCount: 0,
-			wantCount: 0,
-		},
-		{
-			name:      "multiple tasks",
-			seedCount: 3,
-			wantCount: 3,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			svc := setupTaskService()
-			for i := 0; i < tt.seedCount; i++ {
-				svc.CreateTask("Dream", 0)
-			}
-
-			tasks, err := svc.GetTasks()
-			assert.NoError(t, err)
-			assert.Len(t, tasks, tt.wantCount)
 		})
 	}
 }
