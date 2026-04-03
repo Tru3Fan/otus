@@ -57,7 +57,7 @@ func contextPostgres() error {
 	}
 
 	PostgresDB = db
-	fmt.Println("connected to PostgresSQL")
+	fmt.Println("connected to PostgreSQL")
 
 	if err := runMigrations(db); err != nil {
 		return err

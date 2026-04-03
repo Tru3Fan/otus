@@ -242,7 +242,7 @@ func (r *TaskRepo) GetTaskByID(id int) (model.Task, error) {
 }
 
 func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
-	query := `SELECT id, title,  user_id, status, assigned_by FROM tasks`
+	query := `SELECT id, title,  user_id, status, assigned_by, deadline FROM tasks`
 	rows, err := db.PostgresDB.Query(query)
 	if err != nil {
 		return nil, err
@@ -250,12 +250,13 @@ func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
 	defer rows.Close()
 
 	var tasks []model.Task
-	var userID sql.NullInt64
-	var assignedBy sql.NullInt64
 
 	for rows.Next() {
 		var t model.Task
-		if err := rows.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy); err != nil {
+		var userID sql.NullInt64
+		var assignedBy sql.NullInt64
+		var deadline sql.NullTime
+		if err := rows.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy, &deadline); err != nil {
 			return nil, err
 		}
 		if userID.Valid {
@@ -263,6 +264,9 @@ func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
 		}
 		if assignedBy.Valid {
 			t.AssignedBy = int(assignedBy.Int64)
+		}
+		if deadline.Valid {
+			t.Deadline = &deadline.Time
 		}
 		tasks = append(tasks, t)
 
