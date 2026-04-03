@@ -11,7 +11,3 @@ type Task struct {
 	AssignedBy int        `json:"assigned_by,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 }
-
-func (t Task) ID() int {
-	return t.TaskID
-}

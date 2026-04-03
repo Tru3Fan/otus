@@ -87,12 +87,3 @@ func (r *mockUserRepo) DeletePendingUser(username string) error {
 	}
 	return nil
 }
-
-func (r *mockUserRepo) GetUserByTelegramUsername(username string) (model.User, error) {
-	for _, u := range r.users {
-		if u.TelegramUsername == username {
-			return u, nil
-		}
-	}
-	return model.User{}, repository.ErrNotFound
-}

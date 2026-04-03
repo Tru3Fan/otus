@@ -9,7 +9,3 @@ type User struct {
 	TelegramUsername string    `json:"telegram_username,omitempty"`
 	CreatedAt        time.Time `json:"created_at"`
 }
-
-func (u User) ID() int {
-	return u.UserID
-}

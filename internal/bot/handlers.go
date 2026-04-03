@@ -119,17 +119,29 @@ func (b *Bot) handleCallback(cb *tgbotapi.CallbackQuery) {
 		case strings.HasPrefix(cb.Data, "deadline_"):
 			b.handleDeadlineChoice(chatID, userID, cb.Data)
 		case strings.HasPrefix(cb.Data, "task_"):
-			id, _ := strconv.Atoi(strings.TrimPrefix(cb.Data, "task_"))
+			id, err := strconv.Atoi(strings.TrimPrefix(cb.Data, "task_"))
+			if err != nil {
+				return
+			}
 			b.showTaskDetail(chatID, id, userID)
 		case strings.HasPrefix(cb.Data, "close_task_"):
-			id, _ := strconv.Atoi(strings.TrimPrefix(cb.Data, "close_task_"))
-			b.handleCloseTask(chatID, userID, id)
+			id, err := strconv.Atoi(strings.TrimPrefix(cb.Data, "close_task_"))
+			if err != nil {
+				return
+			}
+			b.handleCloseTask(chatID, id)
 		case strings.HasPrefix(cb.Data, "inprogress_task_"):
-			id, _ := strconv.Atoi(strings.TrimPrefix(cb.Data, "inprogress_task_"))
-			b.handleInProgressTask(chatID, userID, id)
+			id, err := strconv.Atoi(strings.TrimPrefix(cb.Data, "inprogress_task_"))
+			if err != nil {
+				return
+			}
+			b.handleInProgressTask(chatID, id)
 		case strings.HasPrefix(cb.Data, "cancel_task_"):
-			id, _ := strconv.Atoi(strings.TrimPrefix(cb.Data, "cancel_task_"))
-			b.handleCancelTask(chatID, userID, id)
+			id, err := strconv.Atoi(strings.TrimPrefix(cb.Data, "cancel_task_"))
+			if err != nil {
+				return
+			}
+			b.handleCancelTask(chatID, id)
 		}
 	}
 }
@@ -253,7 +265,11 @@ func (b *Bot) showTaskDetail(chatID int64, taskID int, telegramID int64) {
 		))
 		return
 	}
-	author, _ := b.userService.GetUserByTelegramID(telegramID)
+	author, err := b.userService.GetUserByTelegramID(telegramID)
+	if err != nil {
+		b.send(chatID, "Ошибка: пользователь не найден")
+		return
+	}
 	if t.AssignedBy != 0 && author.UserID == t.AssignedBy {
 		keyboard = tgbotapi.NewInlineKeyboardMarkup(
 			tgbotapi.NewInlineKeyboardRow(
@@ -306,7 +322,7 @@ func (b *Bot) sendAssigneeChoice(chatID int64, telegramID int64) {
 		tgbotapi.NewInlineKeyboardButtonData("❌ Отменить", "cancel_create"),
 	))
 
-	b.sendWithKeyboard(chatID, "Выберете исполнителя:", tgbotapi.NewInlineKeyboardMarkup(rows...))
+	b.sendWithKeyboard(chatID, "Выберите исполнителя:", tgbotapi.NewInlineKeyboardMarkup(rows...))
 }
 
 func (b *Bot) handleAssigneeChoice(chatID int64, telegramID int64, data string) {
@@ -378,7 +394,7 @@ func (b *Bot) handleDeadlineChoice(chatID int64, telegramID int64, data string) 
 	b.resetState(telegramID)
 }
 
-func (b *Bot) handleCloseTask(chatID int64, telegramID int64, taskID int) {
+func (b *Bot) handleCloseTask(chatID int64, taskID int) {
 	t, err := b.taskService.CloseTask(taskID)
 	if err != nil {
 		b.send(chatID, "Ошибка: "+err.Error())
@@ -389,7 +405,7 @@ func (b *Bot) handleCloseTask(chatID int64, telegramID int64, taskID int) {
 	b.sendMainMenu(chatID)
 }
 
-func (b *Bot) handleCancelTask(chatID int64, telegramID int64, taskID int) {
+func (b *Bot) handleCancelTask(chatID int64, taskID int) {
 	_, err := b.taskService.UpdateTaskStatus(taskID, "cancelled")
 	if err != nil {
 		b.send(chatID, "Ошибка: "+err.Error())
@@ -399,13 +415,13 @@ func (b *Bot) handleCancelTask(chatID int64, telegramID int64, taskID int) {
 	b.sendMainMenu(chatID)
 }
 
-func (b *Bot) handleInProgressTask(chatID int64, telegramID int64, taskID int) {
+func (b *Bot) handleInProgressTask(chatID int64, taskID int) {
 	t, err := b.taskService.UpdateTaskStatus(taskID, "in_progress")
 	if err != nil {
 		b.send(chatID, "Ошибка: "+err.Error())
 		return
 	}
-	b.send(chatID, "Задача  взята в работу.")
+	b.send(chatID, "Задача взята в работу.")
 	b.notifyAuthor(t.AssignedBy, t.Title, "Задача взята в работу")
 	b.sendMainMenu(chatID)
 }

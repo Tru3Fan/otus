@@ -34,7 +34,7 @@ func (s *taskServiceImpl) CreateTask(title string, userID int) (model.Task, erro
 	if title == "" {
 		return model.Task{}, ErrEmptyTitle
 	}
-	t, err := s.repo.AddTask(model.Task{Title: title})
+	t, err := s.repo.AddTask(model.Task{Title: title, Status: "pending"})
 	if err != nil {
 		return model.Task{}, err
 	}

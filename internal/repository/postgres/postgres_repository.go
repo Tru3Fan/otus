@@ -20,13 +20,13 @@ func NewTaskRepo() repository.TaskRepository {
 }
 
 func (r *UserRepo) AddUser(u model.User) (model.User, error) {
-	query := `INSERT INTO users (username, telegram_user_id, telegram_username) VALUES ($1, NULLIF($2::bigint, 0), NULLIF($3, ''))  RETURNING id, username, telegram_user_id, telegram_username`
+	query := `INSERT INTO users (username, telegram_user_id, telegram_username) VALUES ($1, NULLIF($2::bigint, 0), NULLIF($3, ''))  RETURNING id, username, telegram_user_id, telegram_username, created_at`
 	row := db.PostgresDB.QueryRow(query, u.Username, u.TelegramUserID, u.TelegramUsername)
 
 	var created model.User
 	var tgID sql.NullInt64
 	var tgUsername sql.NullString
-	err := row.Scan(&created.UserID, &created.Username, &tgID, &tgUsername)
+	err := row.Scan(&created.UserID, &created.Username, &tgID, &tgUsername, &created.CreatedAt)
 	if err != nil {
 		return model.User{}, err
 	}
@@ -40,13 +40,13 @@ func (r *UserRepo) AddUser(u model.User) (model.User, error) {
 }
 
 func (r *UserRepo) GetUserByID(id int) (model.User, error) {
-	query := `SELECT id, username, telegram_user_id, telegram_username FROM users WHERE id = $1`
+	query := `SELECT id, username, telegram_user_id, telegram_username,  created_at FROM users WHERE id = $1`
 	row := db.PostgresDB.QueryRow(query, id)
 
 	var u model.User
 	var tgID sql.NullInt64
 	var tgUsername sql.NullString
-	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername)
+	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername, &u.CreatedAt)
 	if err == sql.ErrNoRows {
 		return model.User{}, repository.ErrNotFound
 	}
@@ -63,7 +63,7 @@ func (r *UserRepo) GetUserByID(id int) (model.User, error) {
 }
 
 func (r *UserRepo) GetAllUsers() ([]model.User, error) {
-	query := `SELECT id, username, telegram_user_id, telegram_username FROM users`
+	query := `SELECT id, username, telegram_user_id, telegram_username, created_at FROM users`
 	rows, err := db.PostgresDB.Query(query)
 	if err != nil {
 		return nil, err
@@ -75,7 +75,7 @@ func (r *UserRepo) GetAllUsers() ([]model.User, error) {
 		var u model.User
 		var tgUserID sql.NullInt64
 		var tgUsername sql.NullString
-		if err := rows.Scan(&u.UserID, &u.Username, &tgUserID, &tgUsername); err != nil {
+		if err := rows.Scan(&u.UserID, &u.Username, &tgUserID, &tgUsername, &u.CreatedAt); err != nil {
 			return nil, err
 		}
 		if tgUserID.Valid {
@@ -90,13 +90,13 @@ func (r *UserRepo) GetAllUsers() ([]model.User, error) {
 }
 
 func (r *UserRepo) UpdateUser(id int, updated model.User) (model.User, error) {
-	query := `UPDATE users SET username = $1, telegram_user_id = NULLIF($2::bigint, 0), telegram_username = NULLIF($3, '') WHERE id = $4 RETURNING id, username, telegram_user_id, telegram_username`
+	query := `UPDATE users SET username = $1, telegram_user_id = NULLIF($2::bigint, 0), telegram_username = NULLIF($3, '') WHERE id = $4 RETURNING id, username, telegram_user_id, telegram_username, created_at`
 	row := db.PostgresDB.QueryRow(query, updated.Username, updated.TelegramUserID, updated.TelegramUsername, id)
 
 	var u model.User
 	var tgID sql.NullInt64
 	var tgUsername sql.NullString
-	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername)
+	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername, &u.CreatedAt)
 	if err == sql.ErrNoRows {
 		return model.User{}, repository.ErrNotFound
 	}
@@ -126,13 +126,13 @@ func (r *UserRepo) DeleteUser(id int) error {
 }
 
 func (r *UserRepo) GetUserByTelegramID(telegramID int64) (model.User, error) {
-	query := `SELECT id, username, telegram_user_id, telegram_username FROM users WHERE telegram_user_id = $1`
+	query := `SELECT id, username, telegram_user_id, telegram_username, created_at FROM users WHERE telegram_user_id = $1`
 	row := db.PostgresDB.QueryRow(query, telegramID)
 
 	var u model.User
 	var tgID sql.NullInt64
 	var tgUsername sql.NullString
-	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername)
+	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername, &u.CreatedAt)
 	if err == sql.ErrNoRows {
 		return model.User{}, repository.ErrNotFound
 	}
@@ -164,33 +164,10 @@ func (r *UserRepo) DeletePendingUser(username string) error {
 	return err
 }
 
-func (r *UserRepo) GetUserByTelegramUsername(username string) (model.User, error) {
-	query := `SELECT id, username, telegram_user_id, telegram_username FROM users WHERE telegram_username = $1`
-	row := db.PostgresDB.QueryRow(query, username)
-
-	var u model.User
-	var tgID sql.NullInt64
-	var tgUsername sql.NullString
-	err := row.Scan(&u.UserID, &u.Username, &tgID, &tgUsername)
-	if err == sql.ErrNoRows {
-		return model.User{}, repository.ErrNotFound
-	}
-	if err != nil {
-		return model.User{}, err
-	}
-	if tgID.Valid {
-		u.TelegramUserID = tgID.Int64
-	}
-	if tgUsername.Valid {
-		u.TelegramUsername = tgUsername.String
-	}
-	return u, nil
-}
-
 func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 	query := `INSERT INTO tasks (title,  user_id, status, assigned_by, deadline)
 	VALUES ($1, NULLIF($2,0), $3, NULLIF($4, 0), $5) 
-	RETURNING id, title, user_id, status, assigned_by, deadline`
+	RETURNING id, title, user_id, status, assigned_by, deadline, created_at`
 
 	row := db.PostgresDB.QueryRow(query, t.Title, t.UserID, t.Status, t.AssignedBy, t.Deadline)
 
@@ -198,7 +175,7 @@ func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 	var userID sql.NullInt64
 	var assignedBy sql.NullInt64
 	var deadline sql.NullTime
-	err := row.Scan(&created.TaskID, &created.Title, &userID, &created.Status, &assignedBy, &deadline)
+	err := row.Scan(&created.TaskID, &created.Title, &userID, &created.Status, &assignedBy, &deadline, &created.CreatedAt)
 	if err != nil {
 		return model.Task{}, err
 	}
@@ -215,14 +192,14 @@ func (r *TaskRepo) AddTask(t model.Task) (model.Task, error) {
 }
 
 func (r *TaskRepo) GetTaskByID(id int) (model.Task, error) {
-	query := `SELECT id, title, user_id, status, assigned_by, deadline FROM tasks WHERE id = $1`
+	query := `SELECT id, title, user_id, status, assigned_by, deadline, created_at FROM tasks WHERE id = $1`
 	row := db.PostgresDB.QueryRow(query, id)
 
 	var t model.Task
 	var userID sql.NullInt64
 	var assignedBy sql.NullInt64
 	var deadline sql.NullTime
-	err := row.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy, &deadline)
+	err := row.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy, &deadline, &t.CreatedAt)
 	if err == sql.ErrNoRows {
 		return model.Task{}, repository.ErrNotFound
 	}
@@ -242,7 +219,7 @@ func (r *TaskRepo) GetTaskByID(id int) (model.Task, error) {
 }
 
 func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
-	query := `SELECT id, title,  user_id, status, assigned_by, deadline FROM tasks`
+	query := `SELECT id, title,  user_id, status, assigned_by, deadline, created_at FROM tasks`
 	rows, err := db.PostgresDB.Query(query)
 	if err != nil {
 		return nil, err
@@ -256,7 +233,7 @@ func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
 		var userID sql.NullInt64
 		var assignedBy sql.NullInt64
 		var deadline sql.NullTime
-		if err := rows.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy, &deadline); err != nil {
+		if err := rows.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy, &deadline, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 		if userID.Valid {
@@ -275,14 +252,15 @@ func (r *TaskRepo) GetAllTasks() ([]model.Task, error) {
 }
 
 func (r *TaskRepo) UpdateTask(id int, updated model.Task) (model.Task, error) {
-	query := `UPDATE tasks SET title = $1,  user_id = NULLIF($2, 0), status = $3, assigned_by = NULLIF($4, 0) WHERE id = $5 RETURNING id, title, user_id, status, assigned_by`
+	query := `UPDATE tasks SET title = $1,  user_id = NULLIF($2, 0), status = $3, assigned_by = NULLIF($4, 0) WHERE id = $5 RETURNING id, title, user_id, status, assigned_by, deadline, created_at`
 	row := db.PostgresDB.QueryRow(query, updated.Title, updated.UserID, updated.Status, updated.AssignedBy, id)
 
 	var t model.Task
 	var userID sql.NullInt64
 	var assignedBy sql.NullInt64
+	var deadline sql.NullTime
 
-	err := row.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy)
+	err := row.Scan(&t.TaskID, &t.Title, &userID, &t.Status, &assignedBy, &deadline, &t.CreatedAt)
 	if err == sql.ErrNoRows {
 		return model.Task{}, repository.ErrNotFound
 	}
@@ -295,11 +273,14 @@ func (r *TaskRepo) UpdateTask(id int, updated model.Task) (model.Task, error) {
 	if assignedBy.Valid {
 		t.AssignedBy = int(assignedBy.Int64)
 	}
+	if deadline.Valid {
+		t.Deadline = &deadline.Time
+	}
 	return t, nil
 }
 
 func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
-	query := `SELECT id, title, user_id, status, assigned_by FROM tasks WHERE  user_id = $1`
+	query := `SELECT id, title, user_id, status, assigned_by,  created_at FROM tasks WHERE  user_id = $1`
 	rows, err := db.PostgresDB.Query(query, userID)
 	if err != nil {
 		return nil, err
@@ -307,11 +288,11 @@ func (r *TaskRepo) GetTasksByUserID(userID int) ([]model.Task, error) {
 	defer rows.Close()
 
 	var tasks []model.Task
-	var assignedBy sql.NullInt64
 	for rows.Next() {
 		var t model.Task
 		var uid sql.NullInt64
-		if err := rows.Scan(&t.TaskID, &t.Title, &uid, &t.Status, &assignedBy); err != nil {
+		var assignedBy sql.NullInt64
+		if err := rows.Scan(&t.TaskID, &t.Title, &uid, &t.Status, &assignedBy, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 
@@ -340,7 +321,7 @@ func (r *TaskRepo) DeleteTask(id int) error {
 }
 
 func (r *TaskRepo) GetTasksByStatus(status string) ([]model.Task, error) {
-	query := `SELECT id, title, user_id, status, assigned_by FROM tasks WHERE status = $1`
+	query := `SELECT id, title, user_id, status, assigned_by, created_at FROM tasks WHERE status = $1`
 	rows, err := db.PostgresDB.Query(query, status)
 	if err != nil {
 		return nil, err
@@ -353,7 +334,7 @@ func (r *TaskRepo) GetTasksByStatus(status string) ([]model.Task, error) {
 		var uid sql.NullInt64
 
 		var assignedBy sql.NullInt64
-		if err := rows.Scan(&t.TaskID, &t.Title, &uid, &t.Status, &assignedBy); err != nil {
+		if err := rows.Scan(&t.TaskID, &t.Title, &uid, &t.Status, &assignedBy, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 		if uid.Valid {
@@ -368,7 +349,7 @@ func (r *TaskRepo) GetTasksByStatus(status string) ([]model.Task, error) {
 }
 
 func (r *TaskRepo) GetTasksByAuthorID(authorID int) ([]model.Task, error) {
-	query := `SELECT id, title, user_id, status, assigned_by FROM tasks WHERE assigned_by = $1`
+	query := `SELECT id, title, user_id, status, assigned_by, created_at FROM tasks WHERE assigned_by = $1`
 	rows, err := db.PostgresDB.Query(query, authorID)
 	if err != nil {
 		return nil, err
@@ -381,7 +362,7 @@ func (r *TaskRepo) GetTasksByAuthorID(authorID int) ([]model.Task, error) {
 		var uid sql.NullInt64
 		var assignedBy sql.NullInt64
 
-		if err := rows.Scan(&t.TaskID, &t.Title, &uid, &t.Status, &assignedBy); err != nil {
+		if err := rows.Scan(&t.TaskID, &t.Title, &uid, &t.Status, &assignedBy, &t.CreatedAt); err != nil {
 			return nil, err
 		}
 		if uid.Valid {

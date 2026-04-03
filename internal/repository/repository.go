@@ -18,7 +18,6 @@ type UserRepository interface {
 	AddPendingUser(username string) error
 	IsPendingUser(username string) (bool, error)
 	DeletePendingUser(username string) error
-	GetUserByTelegramUsername(username string) (model.User, error)
 }
 
 type TaskRepository interface {

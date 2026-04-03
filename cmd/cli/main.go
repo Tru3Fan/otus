@@ -43,10 +43,12 @@ func runCLI(taskSvc service.TaskService, userSvc service.UserService) {
 		case "3":
 			updateTask(scanner, taskSvc)
 		case "4":
-			deleteTask(scanner, taskSvc)
+			updateStatus(scanner, taskSvc)
 		case "5":
 			filterByStatus(scanner, taskSvc)
 		case "6":
+			deleteTask(scanner, taskSvc)
+		case "7":
 			listUsers(userSvc)
 		case "0":
 			fmt.Println("Выход.")
@@ -63,9 +65,10 @@ func printMenu() {
 	fmt.Println("1. Список задач")
 	fmt.Println("2. Создать задачу")
 	fmt.Println("3. Обновить задачу")
-	fmt.Println("4. Удалить задачу")
+	fmt.Println("4. Изменить статус задачи")
 	fmt.Println("5. Фильтр по статусу")
-	fmt.Println("6. Список пользователей")
+	fmt.Println("6. Удалить задачу")
+	fmt.Println("7. Список пользователей")
 	fmt.Println("0. Выход")
 	fmt.Println("Выберите: ")
 }
@@ -170,4 +173,23 @@ func filterByStatus(scanner *bufio.Scanner, taskSvc service.TaskService) {
 	for _, t := range tasks {
 		fmt.Printf("[%d] %s | статус: %s\n", t.TaskID, t.Title, t.Status)
 	}
+}
+
+func updateStatus(scanner *bufio.Scanner, taskSvc service.TaskService) {
+	fmt.Print("ID задачи: ")
+	scanner.Scan()
+	id, err := strconv.Atoi(strings.TrimSpace(scanner.Text()))
+	if err != nil {
+		fmt.Println("Неверный ID")
+		return
+	}
+	fmt.Print("Статус (pending/in_progress/done/cancelled): ")
+	scanner.Scan()
+	status := strings.TrimSpace(scanner.Text())
+	task, err := taskSvc.UpdateTaskStatus(id, status)
+	if err != nil {
+		fmt.Println("Ошибка:", err)
+		return
+	}
+	fmt.Printf("Статус задачи [%d] обновлён: %s\n", task.TaskID, task.Status)
 }
